@@ -17,6 +17,8 @@ function BoardFabricNew(props) {
     const [isDrawing, setIsDrawing] = useState(false)
     const [msg, setMsg] = useState(null)
     const [originCoor, setOriginCoor] = useState(null)
+    const [ctrlDown, setCrtlDown] = useState(false)
+    const [objectCopy, setObjectCopy] = useState(null)
     useEffect(() => {
         const canvasElement = new fabric.Canvas('board')
         setCanvas(canvasElement)
@@ -26,9 +28,33 @@ function BoardFabricNew(props) {
         socket.current.onmessage = ((e) => {
             let dataFromServer = JSON.parse(e.data)
             handleDraw(dataFromServer)
-            console.log(dataFromServer)
         })
-    }, [canvas, pen, color, line, rect, cycle, originCoor])
+    }, [canvas, pen, color, line, rect, cycle, originCoor, socket])
+
+    const getAbsLeft = (objects) => {
+        if (objects.group) {
+            return objects.left + objects.group.left + (objects.group.width / 2)
+        }
+        return objects.left
+    }
+    const getAbsTop = (objects) => {
+        if (objects.group) {
+            return objects.top + objects.group.top + (objects.group.height / 2)
+        }
+        return objects.top
+    }
+    const getAbsScaleX = (objects) => {
+        if (objects.group) {
+            return objects.scaleX * objects.group.scaleX
+        }
+        return objects.scaleX
+    }
+    const getAbsScaleY = (objects) => {
+        if (objects.group) {
+            return objects.scaleY * objects.group.scaleY
+        }
+        return objects.scaleY
+    }
 
     const make_object = (event) => {
         let pointer = canvas.getPointer(event.e)
@@ -99,7 +125,6 @@ function BoardFabricNew(props) {
                     canvas.add(rect_objects)
                 }
                 else if (message['message']['option'].type === "cycle") {
-                    console.log("hello")
                     const cycle_objects = new fabric.Circle(message['message']['option'])
                     setCycle(cycle_objects)
                     setOriginCoor({
@@ -144,25 +169,65 @@ function BoardFabricNew(props) {
                 }
                 break
             case ("modify-objects"):
-                const objects = canvas.getObjects()
-                for (let i = 0; i < message['message'].length; i++) {
-                    const selectedObjects = objects.filter(object => object.id == message['message'][i].id);
-                    selectedObjects.forEach(object => {
-                        object.set({
-                            top: message['message'][i].top,
-                            left: message['message'][i].left,
-                            height: message['message'][i].height,
-                            width: message['message'][i].width,
-                            scaleX: message['message'][i].scaleX,
-                            scaleY: message['message'][i].scaleY,
-                            angle: message['message'][i].angle
-                        })
-                        object.setCoords()
-                    }
-
-                    )
-                }
+                const objects = canvas.getObjects() // get all objects in canvas
+                const selectedObjects = objects.filter(object => object.id === message['message'].id);
+                selectedObjects.forEach(object => {
+                    object.set({
+                        top: message['message'].top,
+                        left: message['message'].left,
+                        height: message['message'].height,
+                        width: message['message'].width,
+                        scaleX: message['message'].scaleX,
+                        scaleY: message['message'].scaleY,
+                        angle: message['message'].angle
+                    })
+                    object.setCoords()
+                })
                 break
+            case ("remove-objects"):
+                const objects_action = canvas.getObjects()
+                const selectedObjects_remove = objects_action.filter(object => object.id === message['message'].id);
+                canvas.remove(selectedObjects_remove[0])
+                break
+            case ("copy-objects"):
+                const object_sel = canvas.getObjects()
+                const selectedObjects_copy = object_sel.filter(object => object.id === message['message'].id);
+                selectedObjects_copy[0].clone((cloned) => {
+                    setObjectCopy(cloned)
+                })
+                break
+            // case ("paste-objects"):
+            //     if (objectCopy !== null) {
+            //         objectCopy.clone((cloneObject) => {
+            //             canvas.discardActiveObject();
+            //             cloneObject.set({
+            //                 left: cloneObject.left + 10,
+            //                 top: cloneObject.top + 10,
+            //                 evented: true,
+            //             });
+            //             if (cloneObject.type === 'activeSelection') {
+            //                 // active selection needs a reference to the canvas.
+            //                 cloneObject.canvas = canvas;
+            //                 cloneObject.forEachObject(function (obj) {
+            //                     canvas.add(obj);
+            //                 });
+            //                 // this should solve the unselectability
+            //                 cloneObject.setCoords();
+            //             } else {
+            //                 canvas.add(cloneObject);
+            //             }
+            //             objectCopy.top += 10;
+            //             objectCopy.left += 10;
+            //             canvas.setActiveObject(cloneObject);
+            //             canvas.requestRenderAll();
+
+            //         })
+            //     }
+            //     break
+            case ("clear-canvas"):
+                canvas.clear()
+                break
+
         }
         canvas.renderAll()
     }
@@ -182,7 +247,7 @@ function BoardFabricNew(props) {
             message: payload
         })
         setIsDrawing(true)
-    }, [canvas, pen, color, isDrawing])
+    }, [canvas, pen, socket])
 
     const handleMouseMove = useCallback((event) => {
         let pointer = canvas.getPointer(event.e)
@@ -236,79 +301,110 @@ function BoardFabricNew(props) {
                 }
             })
         }
-    }, [canvas, pen, color, isDrawing])
+    }, [canvas, pen, isDrawing, socket])
+
 
     const handleMouseUp = useCallback(() => {
         setIsDrawing(false)
         setColor("black")
         setPen("select")
-    }, [canvas, pen, color, isDrawing])
+    }, [])
 
-    const handleObjects = (list_object) => {
-        if (list_object.length === 1) {
-            return [{
-                type: list_object[0].type,
-                id: list_object[0].id,
-                top: list_object[0].top,
-                left: list_object[0].left,
-                height: list_object[0].height,
-                width: list_object[0].width,
-                scaleX: list_object[0].scaleX,
-                scaleY: list_object[0].scaleY,
-                angle: list_object[0].angle
-            }]
-        }
-        if (list_object.length > 1) {
-            return list_object.map(object => {
-                return {
-                    type: object.type,
+    const handleScalling = useCallback(() => {
+        const objects_selected = canvas.getActiveObjects()
+        objects_selected.forEach(object => {
+            socket.current.send(JSON.stringify({
+                event: "modify-objects",
+                message: {
                     id: object.id,
-                    top: object.top,
-                    left: object.left,
+                    top: getAbsTop(object),
+                    left: getAbsLeft(object),
                     height: object.height,
                     width: object.width,
-                    scaleX: object.scaleX,
-                    scaleY: object.scaleY,
+                    scaleX: getAbsScaleX(object),
+                    scaleY: getAbsScaleY(object),
                     angle: object.angle
+                }
+            }))
+
+        })
+    }, [canvas, socket])
+
+    const handleClear = () => {
+        socket.current.send(JSON.stringify({
+            event: "clear-canvas",
+        }))
+        setMsg({
+            event: "clear-canvas",
+        })
+    }
+
+    const handleKeyDown = (event) => {
+        const ctrlKey = 17;
+        const cmdKey = 91;
+        const vKey = 86;
+        const cKey = 67;
+        const objects_selected = canvas.getActiveObject()
+        let id = !objects_selected ? null : objects_selected.id
+        if (event.keyCode == ctrlKey || event.keyCode == cmdKey) {
+            setCrtlDown(true);
+        }
+        if (ctrlDown && event.keyCode === 8) {
+            socket.current.send(JSON.stringify({
+                event: "remove-objects",
+                message: {
+                    id: id
+                }
+            }))
+            setMsg({
+                event: "remove-objects",
+                message: {
+                    id: id
+                }
+            })
+        }
+        if (ctrlDown && (event.keyCode === cKey)) {
+            socket.current.send(JSON.stringify({
+                event: "copy-objects",
+                message: {
+                    id: id
+                }
+            }))
+            setMsg({
+                event: "copy-objects",
+                message: {
+                    id: id
+                }
+            })
+            setCrtlDown(false)
+        }
+        if (ctrlDown && (event.keyCode === vKey)) {
+            socket.current.send(JSON.stringify({
+                event: "paste-objects",
+                message: {
+                    id: id
+                }
+            }))
+            setMsg({
+                event: "paste-objects",
+                message: {
+                    id: id
                 }
             })
         }
     }
-    const handleScalling = useCallback(() => {
-        const objects_selected = canvas.getActiveObjects()
-        if (objects_selected.length >= 2 ){
-            const selection = new fabric.ActiveSelection(objects_selected, {
-                id : uuidv4(),
-                canvas: canvas
-              });
-            canvas.setActiveObject(selection);
-            console.log(selection)
-        }
-        // socket.current.send(JSON.stringify({
-        //     event: "modify-objects",
-        //     message: {
-        //         type: objects_selected[0].type,
-        //         id: objects_selected[0].id,
-        //         top: objects_selected[0].top,
-        //         left: objects_selected[0].left,
-        //         height: objects_selected[0].height,
-        //         width: objects_selected[0].width,
-        //         scaleX: objects_selected[0].scaleX,
-        //         scaleY: objects_selected[0].scaleY,
-        //         angle: objects_selected[0].angle
-        //     }
-        // }))
-
-    }, [canvas, pen, color, isDrawing])
-
 
     useEffect(() => {
         if (msg !== null) {
             handleDraw(msg)
         }
     }, [msg])
+
+
     useEffect(() => {
         if (canvas !== null) {
+
+            document.addEventListener('keydown', handleKeyDown)
 
             canvas.on("mouse:down", handleMouseDown)
 
@@ -321,11 +417,6 @@ function BoardFabricNew(props) {
             canvas.on("object:rotating", handleScalling)
 
             canvas.on("object:moving", handleScalling)
-
-            // canvas.on("selection:created", handleSelectCreate);
-
-            // canvas.on("selection:updated", handleSelectUpdate);
-
 
 
             return () => {
@@ -341,22 +432,22 @@ function BoardFabricNew(props) {
 
                 canvas.off("object:moving", handleScalling)
 
-                // canvas.off("selection:created", handleSelectCreate);
-
-                // canvas.off("selection:updated", handleSelectUpdate);
             }
 
         }
-    }, [canvas, pen, color, isDrawing, line, rect, cycle, originCoor])
+    }, [canvas, pen, color, isDrawing, line, rect, cycle, originCoor, ctrlDown])
 
     return (
         <>
-            <ToolBoard
-                setPen={setPen}
-                setColor={setColor}
-                pen={pen}
-                color={color}
-            />
+            <div className='tool-board'>
+                <ToolBoard
+                    setPen={setPen}
+                    setColor={setColor}
+                    pen={pen}
+                    color={color}
+                />
+                <button onClick={handleClear}>Clear</button>
+            </div>
             <canvas id="board" width={1000} height={500} className="board-draw" />
         </>
     )
