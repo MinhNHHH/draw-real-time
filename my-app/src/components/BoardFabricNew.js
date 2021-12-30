@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { fabric } from "fabric"
 import "./BoardDraw.css"
 
+
 function BoardFabricNew(props) {
     const socket = props.socket
     const [pen, setPen] = useState("select")
@@ -12,7 +13,7 @@ function BoardFabricNew(props) {
     const [canvas, setCanvas] = useState(null)
     const [line, setLine] = useState(null)
     const [rect, setRect] = useState(null)
-    const [cycle , setCycle] = useState(null)
+    const [cycle, setCycle] = useState(null)
     const [isDrawing, setIsDrawing] = useState(false)
     const [msg, setMsg] = useState(null)
     const [originCoor, setOriginCoor] = useState(null)
@@ -27,7 +28,7 @@ function BoardFabricNew(props) {
             handleDraw(dataFromServer)
             console.log(dataFromServer)
         })
-    }, [canvas, pen, color, line, rect,cycle,originCoor])
+    }, [canvas, pen, color, line, rect, cycle, originCoor])
 
     const make_object = (event) => {
         let pointer = canvas.getPointer(event.e)
@@ -61,7 +62,7 @@ function BoardFabricNew(props) {
         }
         if (pen === "cycle") {
             return {
-                pointer : pointer,
+                pointer: pointer,
                 option: {
                     id: uuidv4(),
                     left: pointer.x,
@@ -70,7 +71,7 @@ function BoardFabricNew(props) {
                     originX: 'center',
                     originY: 'center',
                     stroke: color,
-                    type : "cycle"
+                    type: "cycle"
                 }
             }
         }
@@ -89,7 +90,7 @@ function BoardFabricNew(props) {
                 }
                 else if (message['message']['option'].type === "rectag") {
                     const rect_objects = new fabric.Rect(message['message']['option'])
-                    
+
                     setRect(rect_objects)
                     setOriginCoor({
                         x: message['message']['pointer'].x,
@@ -97,7 +98,7 @@ function BoardFabricNew(props) {
                     })
                     canvas.add(rect_objects)
                 }
-                else if (message['message']['option'].type === "cycle"){
+                else if (message['message']['option'].type === "cycle") {
                     console.log("hello")
                     const cycle_objects = new fabric.Circle(message['message']['option'])
                     setCycle(cycle_objects)
@@ -107,7 +108,7 @@ function BoardFabricNew(props) {
                     })
                     canvas.add(cycle_objects)
                 }
-                    break
+                break
             case ("set-coordinate"):
                 if (message['message'].type === "line" && line !== null) {
                     line.set({
@@ -135,7 +136,7 @@ function BoardFabricNew(props) {
                     });
                     rect.setCoords()
                 }
-                else if (message['message'].type === "cycle" && cycle !== null && originCoor !== null){
+                else if (message['message'].type === "cycle" && cycle !== null && originCoor !== null) {
                     cycle.set({
                         radius: Math.abs(originCoor.x - message['message']['pointer'].x)
                     })
@@ -144,20 +145,23 @@ function BoardFabricNew(props) {
                 break
             case ("modify-objects"):
                 const objects = canvas.getObjects()
-                const selectedObjects = objects.filter(object => object.id == message['message'].id);
-                selectedObjects.forEach(object => {
-                    object.set({
-                        top: message['message'].top,
-                        left: message['message'].left,
-                        height: message['message'].height,
-                        width: message['message'].width,
-                        scaleX: message['message'].scaleX,
-                        scaleY: message['message'].scaleY,
-                        angle: message['message'].angle
-                    })
-                    object.setCoords()
+                for (let i = 0; i < message['message'].length; i++) {
+                    const selectedObjects = objects.filter(object => object.id == message['message'][i].id);
+                    selectedObjects.forEach(object => {
+                        object.set({
+                            top: message['message'][i].top,
+                            left: message['message'][i].left,
+                            height: message['message'][i].height,
+                            width: message['message'][i].width,
+                            scaleX: message['message'][i].scaleX,
+                            scaleY: message['message'][i].scaleY,
+                            angle: message['message'][i].angle
+                        })
+                        object.setCoords()
+                    }
+
+                    )
                 }
-                )
                 break
         }
         canvas.renderAll()
@@ -240,24 +244,60 @@ function BoardFabricNew(props) {
         setPen("select")
     }, [canvas, pen, color, isDrawing])
 
-
+    const handleObjects = (list_object) => {
+        if (list_object.length === 1) {
+            return [{
+                type: list_object[0].type,
+                id: list_object[0].id,
+                top: list_object[0].top,
+                left: list_object[0].left,
+                height: list_object[0].height,
+                width: list_object[0].width,
+                scaleX: list_object[0].scaleX,
+                scaleY: list_object[0].scaleY,
+                angle: list_object[0].angle
+            }]
+        }
+        if (list_object.length > 1) {
+            return list_object.map(object => {
+                return {
+                    type: object.type,
+                    id: object.id,
+                    top: object.top,
+                    left: object.left,
+                    height: object.height,
+                    width: object.width,
+                    scaleX: object.scaleX,
+                    scaleY: object.scaleY,
+                    angle: object.angle
+                }
+            })
+        }
+    }
     const handleScalling = useCallback(() => {
         const objects_selected = canvas.getActiveObjects()
-
-        socket.current.send(JSON.stringify({
-            event: "modify-objects",
-            message: {
-                type: objects_selected[0].type,
-                id: objects_selected[0].id,
-                top: objects_selected[0].top,
-                left: objects_selected[0].left,
-                height: objects_selected[0].height,
-                width: objects_selected[0].width,
-                scaleX: objects_selected[0].scaleX,
-                scaleY: objects_selected[0].scaleY,
-                angle: objects_selected[0].angle
-            }
-        }))
+        if (objects_selected.length >= 2 ){
+            const selection = new fabric.ActiveSelection(objects_selected, {
+                id : uuidv4(),
+                canvas: canvas
+              });
+            canvas.setActiveObject(selection);
+            console.log(selection)
+        }
+        // socket.current.send(JSON.stringify({
+        //     event: "modify-objects",
+        //     message: {
+        //         type: objects_selected[0].type,
+        //         id: objects_selected[0].id,
+        //         top: objects_selected[0].top,
+        //         left: objects_selected[0].left,
+        //         height: objects_selected[0].height,
+        //         width: objects_selected[0].width,
+        //         scaleX: objects_selected[0].scaleX,
+        //         scaleY: objects_selected[0].scaleY,
+        //         angle: objects_selected[0].angle
+        //     }
+        // }))
 
     }, [canvas, pen, color, isDrawing])
 
@@ -307,7 +347,7 @@ function BoardFabricNew(props) {
             }
 
         }
-    }, [canvas, pen, color, isDrawing, line, rect,cycle, originCoor])
+    }, [canvas, pen, color, isDrawing, line, rect, cycle, originCoor])
 
     return (
         <>
