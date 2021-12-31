@@ -6,9 +6,8 @@ import BoardFabricNew from './components/BoardFabricNew';
 
 //'ws://' + '127.0.0.1:8000' + '/ws/websocket/'
 function App() {
-  console.log(process.env.REACT_APP_BASE_API)
   const webSocket = useRef(null)
-  webSocket.current = new WebSocket('ws://node-app-ecru.vercel.app/')
+  webSocket.current = new WebSocket("ws://" + "localhost:8000" + "/")
 
   webSocket.current.onopen = () => {
     console.log('WebSocket open');
