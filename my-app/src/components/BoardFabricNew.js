@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { fabric } from "fabric"
 import "./BoardDraw.css"
 
+
 function BoardFabricNew(props) {
     const socket = props.socket
     const [pen, setPen] = useState("select")
@@ -181,8 +182,7 @@ function BoardFabricNew(props) {
                         angle: message['message'].angle
                     })
                     object.setCoords()
-                }
-                )
+                })
                 break
             case ("remove-objects"):
                 const objects_action = canvas.getObjects()
@@ -346,7 +346,10 @@ function BoardFabricNew(props) {
         const cKey = 67;
         const objects_selected = canvas.getActiveObject()
         let id = !objects_selected ? null : objects_selected.id
-        if (event.key === "Delete") {
+        if (event.keyCode == ctrlKey || event.keyCode == cmdKey) {
+            setCrtlDown(true);
+        }
+        if (ctrlDown && event.keyCode === 8) {
             socket.current.send(JSON.stringify({
                 event: "remove-objects",
                 message: {
@@ -359,9 +362,6 @@ function BoardFabricNew(props) {
                     id: id
                 }
             })
-        }
-        if (event.keyCode == ctrlKey || event.keyCode == cmdKey) {
-            setCrtlDown(true);
         }
         if (ctrlDown && (event.keyCode === cKey)) {
             socket.current.send(JSON.stringify({
