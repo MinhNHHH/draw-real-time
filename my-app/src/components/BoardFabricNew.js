@@ -10,13 +10,10 @@ function BoardFabricNew(props) {
     const [pen, setPen] = useState("select")
     const [color, setColor] = useState("black")
     const [canvas, setCanvas] = useState(null)
-    const [line, setLine] = useState(null)
-    const [rect, setRect] = useState(null)
-    const [cycle, setCycle] = useState(null)
+    const [objects, setObjects] = useState(null)
     const [isDrawing, setIsDrawing] = useState(false)
     const [msg, setMsg] = useState(null)
     const [originCoor, setOriginCoor] = useState(null)
-    const [ctrlDown, setCrtlDown] = useState(false)
     const [objectCopy, setObjectCopy] = useState(null)
     useEffect(() => {
         const canvasElement = new fabric.Canvas('board')
@@ -28,7 +25,7 @@ function BoardFabricNew(props) {
             let dataFromServer = JSON.parse(e.data)
             handleDraw(dataFromServer)
         })
-    }, [canvas, pen, color, line, rect, cycle, originCoor, socket])
+    }, [canvas, pen, color, isDrawing, objects, originCoor,objectCopy])
 
     const getAbsLeft = (objects) => {
         if (objects.group) {
@@ -101,14 +98,14 @@ function BoardFabricNew(props) {
             }
         }
     }
-
+    
     const handleDraw = (message) => {
 
         switch (message.event) {
             case ("add-objects"):
                 if (message['message']['option'].type === "line") {
                     const line_objects = new fabric.Line(message['message'].coordinate, message['message']['option'])
-                    setLine(line_objects)
+                    setObjects(line_objects)
 
                     //line_objects.setCoords()
                     canvas.add(line_objects)
@@ -116,7 +113,7 @@ function BoardFabricNew(props) {
                 else if (message['message']['option'].type === "rectag") {
                     const rect_objects = new fabric.Rect(message['message']['option'])
 
-                    setRect(rect_objects)
+                    setObjects(rect_objects)
                     setOriginCoor({
                         x: message['message']['pointer'].x,
                         y: message['message']['pointer'].y
@@ -125,7 +122,7 @@ function BoardFabricNew(props) {
                 }
                 else if (message['message']['option'].type === "cycle") {
                     const cycle_objects = new fabric.Circle(message['message']['option'])
-                    setCycle(cycle_objects)
+                    setObjects(cycle_objects)
                     setOriginCoor({
                         x: message['message']['pointer'].x,
                         y: message['message']['pointer'].y
@@ -134,42 +131,42 @@ function BoardFabricNew(props) {
                 }
                 break
             case ("set-coordinate"):
-                if (message['message'].type === "line" && line !== null) {
-                    line.set({
+                if (message['message'].type === "line" && objects !== null) {
+                    objects.set({
                         x2: message['message'].x2,
                         y2: message['message'].y2,
                     })
-                    line.setCoords()
+                    objects.setCoords()
                 }
-                else if (message['message'].type === "rectag" && rect !== null && originCoor !== null) {
+                else if (message['message'].type === "rectag" && objects !== null && originCoor !== null) {
                     if (originCoor.x > message['message']['pointer'].x) {
-                        rect.set({
+                        objects.set({
                             left: Math.abs(message['message']['pointer'].x)
                         });
                     }
                     if (originCoor.y > message['message']['pointer'].y) {
-                        rect.set({
+                        objects.set({
                             top: Math.abs(message['message']['pointer'].y)
                         });
                     }
-                    rect.set({
+                    objects.set({
                         width: Math.abs(originCoor.x - message['message']['pointer'].x)
                     });
-                    rect.set({
+                    objects.set({
                         height: Math.abs(originCoor.y - message['message']['pointer'].y)
                     });
-                    rect.setCoords()
+                    objects.setCoords()
                 }
-                else if (message['message'].type === "cycle" && cycle !== null && originCoor !== null) {
-                    cycle.set({
+                else if (message['message'].type === "cycle" && objects !== null && originCoor !== null) {
+                    objects.set({
                         radius: Math.abs(originCoor.x - message['message']['pointer'].x)
                     })
-                    cycle.setCoords()
+                    objects.setCoords()
                 }
                 break
             case ("modify-objects"):
-                const objects = canvas.getObjects() // get all objects in canvas
-                const selectedObjects = objects.filter(object => object.id === message['message'].id);
+                const objects_modify = canvas.getObjects() // get all objects in canvas
+                const selectedObjects = objects_modify.filter(object => object.id === message['message'].id);
                 selectedObjects.forEach(object => {
                     object.set({
                         top: message['message'].top,
@@ -192,38 +189,42 @@ function BoardFabricNew(props) {
             case ("copy-objects"):
                 const object_sel = canvas.getObjects()
                 const selectedObjects_copy = object_sel.filter(object => object.id === message['message'].id);
-                selectedObjects_copy[0].clone((cloned) => {
-                    setObjectCopy(cloned)
-                })
+                console.log(selectedObjects_copy)
+                setObjectCopy(selectedObjects_copy[0])
+                // selectedObjects_copy[0].clone((cloned) => {
+                //     setObjectCopy(cloned)
+                // })
                 break
-            // case ("paste-objects"):
-            //     if (objectCopy !== null) {
-            //         objectCopy.clone((cloneObject) => {
-            //             canvas.discardActiveObject();
-            //             cloneObject.set({
-            //                 left: cloneObject.left + 10,
-            //                 top: cloneObject.top + 10,
-            //                 evented: true,
-            //             });
-            //             if (cloneObject.type === 'activeSelection') {
-            //                 // active selection needs a reference to the canvas.
-            //                 cloneObject.canvas = canvas;
-            //                 cloneObject.forEachObject(function (obj) {
-            //                     canvas.add(obj);
-            //                 });
-            //                 // this should solve the unselectability
-            //                 cloneObject.setCoords();
-            //             } else {
-            //                 canvas.add(cloneObject);
-            //             }
-            //             objectCopy.top += 10;
-            //             objectCopy.left += 10;
-            //             canvas.setActiveObject(cloneObject);
-            //             canvas.requestRenderAll();
+            case ("paste-objects"):
+                if (objectCopy !== null) {
+                    objectCopy.clone((cloneObject) => {
+                        //canvas.discardActiveObject();
+                        cloneObject.set({
+                            id : uuidv4(),
+                            left: cloneObject.left + 10,
+                            top: cloneObject.top + 10,
+                            //evented: true,
+                        });
+                        canvas.add(cloneObject);
+                        // if (cloneObject.type === 'activeSelection') {
+                        //     // active selection needs a reference to the canvas.
+                        //     cloneObject.canvas = canvas;
+                        //     cloneObject.forEachObject(function (obj) {
+                        //         canvas.add(obj);
+                        //     });
+                        //     // this should solve the unselectability
+                        //     cloneObject.setCoords();
+                        // } else {
+                        //     canvas.add(cloneObject);
+                        // }
+                        objectCopy.top += 10;
+                        objectCopy.left += 10;
+                        //canvas.setActiveObject(cloneObject);
+                        //canvas.requestRenderAll();
 
-            //         })
-            //     }
-            //     break
+                    })
+                }
+                break
             case ("clear-canvas"):
                 canvas.clear()
                 break
@@ -235,7 +236,6 @@ function BoardFabricNew(props) {
     const handleMouseDown = useCallback((event) => {
         const payload = make_object(event)
         if (pen === "select") {
-            canvas.renderAll()
             return
         }
         socket.current.send(JSON.stringify({
@@ -340,13 +340,17 @@ function BoardFabricNew(props) {
     }
 
     const handleKeyDown = (event) => {
-        const ctrlKey = 17;
-        const cmdKey = 91;
         const vKey = 86;
         const cKey = 67;
+        
         const objects_selected = canvas.getActiveObject()
         let id = !objects_selected ? null : objects_selected.id
-        if (event.key === "Delete") {
+        
+        // if (event.keyCode === ctrlKey || event.keyCode === cmdKey) {
+        //     console.log("dadasdasd")
+        //     setCrtlDown(true);
+        // }
+        if ((event.ctrlKey || event.metaKey) &&  event.keyCode === 8 ) {
             socket.current.send(JSON.stringify({
                 event: "remove-objects",
                 message: {
@@ -360,10 +364,8 @@ function BoardFabricNew(props) {
                 }
             })
         }
-        if (event.keyCode === ctrlKey || event.keyCode === cmdKey) {
-            setCrtlDown(true);
-        }
-        if (ctrlDown && (event.keyCode === cKey)) {
+        else if ((event.ctrlKey || event.metaKey) && event.keyCode === cKey) {
+            
             socket.current.send(JSON.stringify({
                 event: "copy-objects",
                 message: {
@@ -376,9 +378,8 @@ function BoardFabricNew(props) {
                     id: id
                 }
             })
-            setCrtlDown(false)
         }
-        if (ctrlDown && (event.keyCode === vKey)) {
+        else if ((event.ctrlKey || event.metaKey) && event.keyCode === vKey) {
             socket.current.send(JSON.stringify({
                 event: "paste-objects",
                 message: {
@@ -392,18 +393,16 @@ function BoardFabricNew(props) {
                 }
             })
         }
-    }
+    };
 
     useEffect(() => {
         if (msg !== null) {
-            handleDraw(msg)
+            handleDraw(msg);
         }
-    }, [msg])
-
+    }, [msg]);
 
     useEffect(() => {
         if (canvas !== null) {
-
             document.addEventListener('keydown', handleKeyDown)
 
             canvas.on("mouse:down", handleMouseDown)
@@ -432,10 +431,11 @@ function BoardFabricNew(props) {
 
                 canvas.off("object:moving", handleScalling)
 
+                document.removeEventListener('keydown', handleKeyDown)
             }
 
         }
-    }, [canvas, pen, color, isDrawing, line, rect, cycle, originCoor, ctrlDown])
+    }, [canvas, pen, color, isDrawing,objects, originCoor])
 
     return (
         <>
