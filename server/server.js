@@ -6,29 +6,39 @@ const server = http.createServer();
 const wsServer = new WebSocketServer({
   httpServer: server
 });
-const clients = []
-const id = Math.random()
+const object_existed = [];
+const clients = [];
+
 wsServer.on('request', function (request) {
-  console.log(request.origin)
   const connection = request.accept(null, request.origin);
-  connection.id = id
-  clients.push(connection)
+  clients.push(connection);
+
+  connection.send(JSON.stringify({
+    event : "connect",
+    object_existed : object_existed
+  }))
 
   connection.on('message', function (message) {
-    const msg = JSON.parse(message['utf8Data'])
-
+    const msg = JSON.parse(message['utf8Data']);
+    if (msg['event'] === "add-objects-exist") {
+      msg['message'].object.forEach(o => {
+        if (!object_existed.includes(o)) {
+          object_existed.push(o);
+        };
+      });
+    };
     clients.forEach(function (client) {
       // client.send(JSON.stringify({
       //   event: msg.event,
       //   message: msg.message
       // }))
-      if (client !== connection && client.readyState === WebSocketServer.OPEN){
+      if (client !== connection && client.readyState === WebSocketServer.OPEN) {
         client.send(JSON.stringify({
           event: msg.event,
           message: msg.message
-        }))
+        }));
       };
-    })
+    });
   });
   connection.on('close', function (reasonCode, description) {
     console.log('Client has disconnected.');
