@@ -1,7 +1,5 @@
 import React, { useRef } from 'react';
 import BoardFabricNew from './components/BoardFabricNew';
-//import BoardDraw from './components/BoardDraw';
-//import BoardFarbic from './components/BoardFarbic';
 
 
 //'ws://' + '127.0.0.1:8000' + '/ws/websocket/'
@@ -16,6 +14,7 @@ function App() {
   return (
 
     <div className="App">
+
       <BoardFabricNew socket = {webSocket}/>
     </div>
 

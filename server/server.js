@@ -40,20 +40,13 @@ wsServer.on('request', function (request) {
       })
     }
     else if(msg['event'] === "clear-canvas"){
-      object_existed.length = 0
+      return object_existed.length = 0
     }
     else if(msg['event'] === "remove-objects"){
       const object_removed = object_existed.find(o => o.id === msg['message'].id)
-      console.log(object_removed)
       object_existed.splice(object_removed,1)
     };
-    console.log(object_existed)
     clients.forEach(function (client) {
-      // client.send(JSON.stringify({
-      //   event: msg.event,
-      //   message: msg.message
-      // }))
-      
       if (client !== connection && client.readyState === WebSocketServer.OPEN) {
         client.send(JSON.stringify({
           event: msg.event,
