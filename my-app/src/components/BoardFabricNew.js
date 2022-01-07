@@ -1,12 +1,14 @@
-import React, { useEffect, useState, useCallback } from 'react'
+import React, { useEffect, useState, useCallback, useRef } from 'react'
 import ToolBoard from './ToolBoard'
 import { v4 as uuidv4 } from 'uuid'
 
 import { fabric } from "fabric"
 import "./BoardDraw.css"
+import { useParams } from 'react-router-dom'
 
-function BoardFabricNew(props) {
-    const socket = props.socket
+function BoardFabricNew() {
+    const { id } = useParams();
+    const socket = useRef(null)
     const [pen, setPen] = useState("select")
     const [color, setColor] = useState("black")
     const [canvas, setCanvas] = useState(null)
@@ -17,10 +19,14 @@ function BoardFabricNew(props) {
     const [objectCopy, setObjectCopy] = useState(null)
     useEffect(() => {
         const canvasElement = new fabric.Canvas('board')
+        socket.current = new WebSocket("ws://localhost:8000/" + `${id}`)
         setCanvas(canvasElement)
     }, [])
 
     useEffect(() => {
+        socket.current.onopen = () => {
+            console.log('WebSocket open');
+        }
         socket.current.onmessage = ((e) => {
             let dataFromServer = JSON.parse(e.data)
             handleDraw(dataFromServer)
@@ -224,7 +230,7 @@ function BoardFabricNew(props) {
                         setObjects(rect_redraw)
                         rect_redraw.setCoords()
                     }
-                    else if (o.type === "cycle"){
+                    else if (o.type === "cycle") {
                         const cycle_redraw = new fabric.Circle(o)
                         canvas.add(cycle_redraw)
                         setObjects(cycle_redraw)
@@ -308,7 +314,7 @@ function BoardFabricNew(props) {
 
 
     const handleMouseUp = useCallback(() => {
-        if(objects !== null){
+        if (objects !== null) {
             socket.current.send(JSON.stringify({
                 event: "add-objects-exist",
                 message: {
