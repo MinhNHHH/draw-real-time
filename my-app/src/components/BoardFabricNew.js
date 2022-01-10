@@ -245,6 +245,7 @@ function BoardFabricNew() {
     const handleMouseDown = useCallback((event) => {
         const payload = make_object(event)
         if (pen === "select") {
+            setObjects(null)
             return
         }
         socket.current.send(JSON.stringify({
@@ -256,10 +257,15 @@ function BoardFabricNew() {
             message: payload
         })
         setIsDrawing(true)
+        return
     }, [canvas, pen, socket])
 
     const handleMouseMove = useCallback((event) => {
         let pointer = canvas.getPointer(event.e)
+        const object_active = canvas.getActiveObject()
+        if (object_active){
+            return
+        }
         if (pen === "line" && isDrawing) {
             socket.current.send(JSON.stringify({
                 event: "set-coordinate",
@@ -278,7 +284,7 @@ function BoardFabricNew() {
                 }
             })
         }
-        if (pen === "rectag" && isDrawing) {
+        else if (pen === "rectag" && isDrawing) {
             socket.current.send(JSON.stringify({
                 event: "set-coordinate",
                 message: {
@@ -294,7 +300,7 @@ function BoardFabricNew() {
                 }
             })
         }
-        if (pen === "cycle" && isDrawing) {
+        else if (pen === "cycle" && isDrawing) {
             socket.current.send(JSON.stringify({
                 event: "set-coordinate",
                 message: {
@@ -323,10 +329,11 @@ function BoardFabricNew() {
                 }
             }))
         }
+        
         setIsDrawing(false)
-        setColor("black")
-        setPen("select")
-    }, [canvas, objects])
+        // setColor("black")
+        //setPen("select")
+    }, [canvas,objects])
 
     const handleScalling = useCallback(() => {
         const objects_selected = canvas.getActiveObjects()
