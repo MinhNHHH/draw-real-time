@@ -7,7 +7,7 @@ import "./BoardDraw.css"
 import { useParams } from 'react-router-dom'
 
 function BoardFabricNew() {
-    const { id } = useParams();
+    const { id } = useParams()
     const socket = useRef(null)
     const [pen, setPen] = useState("select")
     const [color, setColor] = useState("black")
@@ -25,7 +25,7 @@ function BoardFabricNew() {
 
     useEffect(() => {
         socket.current.onopen = () => {
-            console.log('WebSocket open');
+            console.log('WebSocket open')
         }
         socket.current.onmessage = ((e) => {
             let dataFromServer = JSON.parse(e.data)
@@ -106,7 +106,7 @@ function BoardFabricNew() {
     }
 
     const handleDraw = (message) => {
-
+        console.log(color)
         switch (message.event) {
             case ("add-objects"):
                 if (message['message']['option'].type === "line") {
@@ -148,19 +148,19 @@ function BoardFabricNew() {
                     if (originCoor.x > message['message']['pointer'].x) {
                         objects.set({
                             left: Math.abs(message['message']['pointer'].x)
-                        });
+                        })
                     }
                     if (originCoor.y > message['message']['pointer'].y) {
                         objects.set({
                             top: Math.abs(message['message']['pointer'].y)
-                        });
+                        })
                     }
                     objects.set({
                         width: Math.abs(originCoor.x - message['message']['pointer'].x)
-                    });
+                    })
                     objects.set({
                         height: Math.abs(originCoor.y - message['message']['pointer'].y)
-                    });
+                    })
                     objects.setCoords()
                 }
                 else if (message['message'].type === "cycle" && objects !== null && originCoor !== null) {
@@ -172,7 +172,7 @@ function BoardFabricNew() {
                 break
             case ("modify-objects"):
                 const objects_modify = canvas.getObjects() // get all objects in canvas
-                const selectedObjects = objects_modify.filter(object => object.id === message['message'].id);
+                const selectedObjects = objects_modify.filter(object => object.id === message['message'].id)
                 selectedObjects.forEach(object => {
                     object.set({
                         top: message['message'].top,
@@ -189,27 +189,26 @@ function BoardFabricNew() {
                 break
             case ("remove-objects"):
                 const objects_action = canvas.getObjects()
-                const selectedObjects_remove = objects_action.filter(object => object.id === message['message'].id);
+                const selectedObjects_remove = objects_action.filter(object => object.id === message['message'].id)
                 canvas.remove(selectedObjects_remove[0])
                 break
             case ("copy-objects"):
                 const object_sel = canvas.getObjects()
-                const selectedObjects_copy = object_sel.filter(object => object.id === message['message'].id);
+                const selectedObjects_copy = object_sel.filter(object => object.id === message['message'].id)
                 setObjectCopy(selectedObjects_copy[0])
                 break
             case ("paste-objects"):
                 if (objectCopy !== null) {
                     objectCopy.clone((cloneObject) => {
-                        //canvas.discardActiveObject();
                         cloneObject.set({
                             id: uuidv4(),
                             left: cloneObject.left + 20,
                             top: cloneObject.top + 20,
-                        });
-                        canvas.add(cloneObject);
+                        })
+                        canvas.add(cloneObject)
 
-                        objectCopy.top += 20;
-                        objectCopy.left += 20;
+                        objectCopy.top += 20
+                        objectCopy.left += 20
                     })
                 }
                 break
@@ -257,13 +256,13 @@ function BoardFabricNew() {
             message: payload
         })
         setIsDrawing(true)
-        return
-    }, [canvas, pen, socket])
+
+    }, [canvas, pen, color])
 
     const handleMouseMove = useCallback((event) => {
         let pointer = canvas.getPointer(event.e)
         const object_active = canvas.getActiveObject()
-        if (object_active){
+        if (object_active) {
             return
         }
         if (pen === "line" && isDrawing) {
@@ -316,7 +315,7 @@ function BoardFabricNew() {
                 }
             })
         }
-    }, [canvas, pen, isDrawing, socket])
+    }, [canvas, pen, isDrawing, color])
 
 
     const handleMouseUp = useCallback(() => {
@@ -329,11 +328,10 @@ function BoardFabricNew() {
                 }
             }))
         }
-        
         setIsDrawing(false)
         // setColor("black")
-        //setPen("select")
-    }, [canvas,objects])
+        setPen("select")
+    }, [canvas, objects, color])
 
     const handleScalling = useCallback(() => {
         const objects_selected = canvas.getActiveObjects()
@@ -365,16 +363,12 @@ function BoardFabricNew() {
     }
 
     const handleKeyDown = (event) => {
-        const vKey = 86;
-        const cKey = 67;
+        const vKey = 86
+        const cKey = 67
 
         const objects_selected = canvas.getActiveObject()
         let id = !objects_selected ? null : objects_selected.id
 
-        // if (event.keyCode === ctrlKey || event.keyCode === cmdKey) {
-        //     console.log("dadasdasd")
-        //     setCrtlDown(true);
-        // }
         if ((event.ctrlKey || event.metaKey) && event.keyCode === 8) {
             socket.current.send(JSON.stringify({
                 event: "remove-objects",
@@ -418,13 +412,13 @@ function BoardFabricNew() {
                 }
             })
         }
-    };
+    }
 
     useEffect(() => {
         if (msg !== null) {
-            handleDraw(msg);
+            handleDraw(msg)
         }
-    }, [msg]);
+    }, [msg])
 
     useEffect(() => {
         if (canvas !== null) {
@@ -458,7 +452,6 @@ function BoardFabricNew() {
 
                 document.removeEventListener('keydown', handleKeyDown)
             }
-
         }
     }, [canvas, pen, color, isDrawing, objects, originCoor])
 
