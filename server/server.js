@@ -7,19 +7,14 @@ const server = http.createServer();
 const wsServer = new WebSocketServer({
   httpServer: server
 });
-
 const list_room = [];
-
 function update_dic(a, b) {
-  // b.forEach(key => {
-  //   a[key] = b[key]
-  // })
+  console.log(b)
   for (key in b) {
     a[key] = b[key]
   };
   return a;
 };
-
 class Room {
   constructor(room_id) {
     this.room_id = room_id;
@@ -28,7 +23,9 @@ class Room {
   }
 
   addConnection(connection) {
-    return this.connections.push(connection)
+    if (!this.connections.includes(connection)) {
+      return this.connections.push(connection)
+    }
   }
 
   addObject(object) {
@@ -41,6 +38,7 @@ class Room {
         let temporary = message['message']['object'];
         temporary['id'] = message['message']['id'];
         if (!this.object_draw.find(o => o.id === temporary.id)) {
+          console.log("add object draw")
           this.object_draw.push(temporary);
         }
         break
@@ -53,46 +51,16 @@ class Room {
         break
       case ("remove-objects"):
         const object_removed = this.object_draw.find(o => o.id === message['message'].id);
-        this.object_draw.splice(object_removed, 1);
+        const index_object = this.object_draw.indexOf(object_removed)
+        this.object_draw.splice(index_object, 1);
         break
-    }
-  }
-};
-
-
-wsServer.on('request', function (request) {
-
-  const connection = request.accept(null, request.origin);
-  // check room existed and create room and add connection
-  const existed_room = list_room.find(r => r.room_id === request.resourceURL['path'])
-  if (!existed_room) {
-    const new_room = new Room(request.resourceURL['path']);
-    new_room.addConnection(connection)
-    list_room.push(new_room);
-  }
-  // If room existed add another connection
-  else {
-    if (!existed_room.connections.includes(connection)) {
-      console.log('add new connection')
-      existed_room.connections.push(connection);
+      case ("paste-objects"):
+        console.log(message['message'])
     };
   };
-  // room contain connection
-  const room_contain_connection = list_room.find(r =>
-    r.connections.includes(connection)
-  );
-  // send message to client when first connect
-  connection.send(JSON.stringify({
-    event: "connect",
-    object_existed: room_contain_connection.object_draw
-  }));
 
-  connection.on('message', function (message) {
-    const msg = JSON.parse(message['utf8Data']);
-    // handle message
-    room_contain_connection.handleMessage(msg)
-    // send message to client.
-    room_contain_connection.connections.forEach(function (client) {
+  boardcastException(msg, connection) {
+    this.connections.forEach(function (client) {
       if (client !== connection && client.readyState === WebSocketServer.OPEN) {
         client.send(JSON.stringify({
           event: msg.event,
@@ -100,12 +68,42 @@ wsServer.on('request', function (request) {
         }));
       };
     });
+  };
+
+  handleDeleteConnection(connection) {
+    this.connections.splice(connection, 1)
+  };
+};
+
+
+wsServer.on('request', function (request) {
+  const connection = request.accept(null, request.origin);
+  // check room existed and create room and add connection
+  let room = list_room.find(r => r.room_id === request.resourceURL['path'])
+  if (!room) {
+    room = new Room(request.resourceURL['path'])
+    list_room.push(room)
+  }
+  // If room existed add another connection
+  room.addConnection(connection)
+  // send message to client when first connect
+  connection.send(JSON.stringify({
+    event: "connect",
+    object_existed: room.object_draw
+  }));
+  connection.on('message', function (message) {
+    const msg = JSON.parse(message['utf8Data']);
+    // handle message
+    room.handleMessage(msg)
+    // send message to client.
+    room.boardcastException(msg, connection)
+
   });
 
   connection.on('close', function (reasonCode, description) {
-    room_contain_connection.connections.splice(connection, 1);
+    room.handleDeleteConnection(connection)
     console.log('Client has disconnected.');
   });
-  console.log("room", list_room)
+
 });
 server.listen(8000);
