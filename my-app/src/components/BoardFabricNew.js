@@ -43,10 +43,10 @@ function BoardFabricNew() {
    const [originCoordinate, setOriginCoordinate] = useState(null)
    const [canvas, setCanvas] = useState(null)
    const [objectCopy, setObjectCopy] = useState(null)
-
    useEffect(() => {
       const canvasElement = new fabric.Canvas('board')
-      const onSocket = new WebSocket("ws://localhost:8000/" + `${id}`)
+      const onSocket = new WebSocket(`ws://draw-realtime-socket.herokuapp.com/` + `${id}`)
+      console.log(onSocket)
       setCanvas(canvasElement)
       setSocket(onSocket)
    }, [])
@@ -58,7 +58,7 @@ function BoardFabricNew() {
          }
          socket.onmessage = ((e) => {
             let dataFromServer = JSON.parse(e.data)
-
+            console.log(dataFromServer)
             handleDraw(dataFromServer)
          })
       }
