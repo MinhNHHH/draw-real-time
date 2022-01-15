@@ -1,12 +1,6 @@
-const http = require('http');
-const WebSocketServer = require('websocket').server;
-//const { uuid } = require('uuidv4');
+const { WebSocket, WebSocketServer } = require('ws');
 
-const server = http.createServer();
-
-const wsServer = new WebSocketServer({
-  httpServer: server
-});
+const wsServer = new WebSocketServer({ port: 8000 });
 const list_room = [];
 function update_dic(a, b) {
   console.log(b)
@@ -61,7 +55,8 @@ class Room {
 
   boardcastException(msg, connection) {
     this.connections.forEach(function (client) {
-      if (client !== connection && client.readyState === WebSocketServer.OPEN) {
+      if (client !== connection && client.readyState === WebSocket.OPEN) {
+
         client.send(JSON.stringify({
           event: msg.event,
           message: msg.message
@@ -75,35 +70,30 @@ class Room {
   };
 };
 
-
-wsServer.on('request', function (request) {
-  const connection = request.accept(null, request.origin);
+wsServer.on('connection', (ws, request) => {
   // check room existed and create room and add connection
-  let room = list_room.find(r => r.room_id === request.resourceURL['path'])
+  let room = list_room.find(r => r.room_id === request.url);
   if (!room) {
-    room = new Room(request.resourceURL['path'])
-    list_room.push(room)
+    room = new Room(request.url);
+    list_room.push(room);
   }
   // If room existed add another connection
-  room.addConnection(connection)
+  room.addConnection(ws);
   // send message to client when first connect
-  connection.send(JSON.stringify({
+  ws.send(JSON.stringify({
     event: "connect",
     object_existed: room.object_draw
   }));
-  connection.on('message', function (message) {
-    const msg = JSON.parse(message['utf8Data']);
-    // handle message
-    room.handleMessage(msg)
+  ws.on('message', (message) => {
+    console.log("room", list_room)
+    const msg = JSON.parse(message.toString('utf-8'));
+    // handle message 
+    room.handleMessage(msg);
     // send message to client.
-    room.boardcastException(msg, connection)
-
-  });
-
-  connection.on('close', function (reasonCode, description) {
-    room.handleDeleteConnection(connection)
+    room.boardcastException(msg, ws);
+  })
+  ws.on('close', () => {
+    room.handleDeleteConnection(ws);
     console.log('Client has disconnected.');
-  });
-
-});
-server.listen(8000);
+  })
+})
