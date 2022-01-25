@@ -15,6 +15,7 @@ export default function ToolBoard(props) {
             <div onChange={handleChangePen}>
                 <label htmlFor="pen"></label>
                 <select name="pen" value = {props.pen}>
+                <option value="pencil">Pencil</option>
                     <option value="select">Select</option>
                     <option value="line">Line</option>
                     <option value="rectag">Rectag</option>

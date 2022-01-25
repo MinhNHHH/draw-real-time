@@ -45,9 +45,7 @@ function BoardFabricNew() {
    const [objectCopy, setObjectCopy] = useState(null)
    useEffect(() => {
       const canvasElement = new fabric.Canvas('board')
-      const url =`ws://draw-realtime-socket.herokuapp.com/` + `${id}`
       const onSocket = new WebSocket(`wss://draw-realtime-socket.herokuapp.com/` + `${id}`)
-      console.log(onSocket)
       setCanvas(canvasElement)
       setSocket(onSocket)
    }, [])
@@ -107,6 +105,15 @@ function BoardFabricNew() {
                   type: "cycle"
                }
             }
+         case ('pencil'):
+            return {
+               pointer: pointer,
+               option: {
+                  id: uuidv4(),
+                  stroke: option.color,
+                  type: "pencil"
+               }
+            }
       }
    }
 
@@ -132,6 +139,9 @@ function BoardFabricNew() {
                   x: message['message']['pointer'].x,
                   y: message['message']['pointer'].y
                }
+            }
+            else if (message['message']['option'].type === "pencil"){
+               objectDrawing = new fabric.PencilBrush(message['message']['option']);
             }
             setObjectDraw(objectDrawing)
             setOriginCoordinate(originCoordinateUpdating)
@@ -168,12 +178,16 @@ function BoardFabricNew() {
                   radius: Math.abs(originCoordinate.x - message['message']['pointer'].x)
                })
             }
+            else if(message['message'].type === "pencil"){
+               objectDraw.isDrawingMode = true;
+            }
             if (objectDraw) {
                objectDraw.setCoords()
             }
             break
          case ("modify-objects"):
-            const objects_modify = canvas.getObjects() // get all objects in canvas
+            // get all objects in canvas
+            const objects_modify = canvas.getObjects()
             const selectedObjects = objects_modify.filter(object => object.id === message['message'].id)
             selectedObjects.forEach(object => {
                object.set({
