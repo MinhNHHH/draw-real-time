@@ -32,6 +32,7 @@ const getAbsScaleY = (objects) => {
 }
 
 function BoardFabricNew() {
+   console.log(window.innerWidth, window.innerHeight)
    const { id } = useParams()
    const [socket, setSocket] = useState(null)
    const [option, setOption] = useState({
@@ -45,6 +46,10 @@ function BoardFabricNew() {
    const [objectCopy, setObjectCopy] = useState(null)
    useEffect(() => {
       const canvasElement = new fabric.Canvas('board')
+      canvasElement.set({
+         width: window.innerWidth,
+         height: window.innerHeight - 200
+      })
       const onSocket = new WebSocket(`wss://draw-realtime-socket.herokuapp.com/` + `${id}`)
       setCanvas(canvasElement)
       setSocket(onSocket)
@@ -140,7 +145,7 @@ function BoardFabricNew() {
                   y: message['message']['pointer'].y
                }
             }
-            else if (message['message']['option'].type === "pencil"){
+            else if (message['message']['option'].type === "pencil") {
                objectDrawing = new fabric.PencilBrush(message['message']['option']);
             }
             setObjectDraw(objectDrawing)
@@ -178,7 +183,7 @@ function BoardFabricNew() {
                   radius: Math.abs(originCoordinate.x - message['message']['pointer'].x)
                })
             }
-            else if(message['message'].type === "pencil"){
+            else if (message['message'].type === "pencil") {
                objectDraw.isDrawingMode = true;
             }
             if (objectDraw) {
@@ -387,16 +392,18 @@ function BoardFabricNew() {
 
    return (
       <>
-         <div className='tool-board'>
-            <ToolBoard
-               setPen={(e) => { setOption({ ...option, pen: e }) }}
-               setColor={(e) => { setOption({ ...option, color: e }) }}
-               pen={option.pen}
-               color={option.color}
-            />
-            <button onClick={handleClear}>Clear</button>
-         </div>
-         <canvas id="board" width={1000} height={500} className="board-draw" />
+
+         <canvas id="board" width={window.innerWidth} height={(window.innerHeight - 100)}>
+         </canvas  >
+         <div className='flex justify-center '>
+               <ToolBoard
+                  setPen={(e) => { setOption({ ...option, pen: e }) }}
+                  setColor={(e) => { setOption({ ...option, color: e }) }}
+                  pen={option.pen}
+                  color={option.color}
+               />
+               <button onClick={handleClear}>Clear</button>
+            </div>
       </>
    )
 }
