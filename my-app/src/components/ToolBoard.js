@@ -1,49 +1,99 @@
-import React from 'react'
-import "./ToolBoard.css"
+import React from 'react';
+import { ReactComponent as Mouse } from "../svg/mouse.svg";
+import { ReactComponent as Pencil } from "../svg/pencil.svg";
+import { ReactComponent as Eraser } from "../svg/eraser.svg";
+import { ReactComponent as Rectangle } from "../svg/rectangle.svg";
+import { ReactComponent as Cycle } from "../svg/cycle.svg";
+import { ReactComponent as Line } from "../svg/line.svg";
+// import { ReactComponent as Rectangle } from "../svg/rectangle.svg";
 
+import ToolBoardCheckBox from './ToolBoardCheckBox';
 export default function ToolBoard(props) {
-
+    const listOption = [
+        {
+            type: "mouse",
+            icon: <Mouse />
+        },
+        {
+            type: "pencil",
+            icon: <Pencil />
+        },
+        {
+            type: "rectag",
+            icon: <Rectangle />
+        },
+        {
+            type: "eraser",
+            icon: <Eraser />
+        },
+    ]
+    const subObject = [
+        {
+            type: "rectag",
+            icon: <Rectangle />
+        },
+        {
+            type: "cycle",
+            icon: <Cycle />
+        },
+        {
+            type: "line",
+            icon: <Line />
+        },
+    ]
+    const displayOption = listOption.map(e => {
+        return <ToolBoardCheckBox
+            key={e.type}
+            styles="w-9 h-9 mr-1 ml-1 mt-0.125"
+            value={e.type}
+            checked={props.type === e.type}
+            value={e.type}
+            icon={e.icon}
+        />
+    })
+    const displayObject = subObject.map(e => {
+        if (e.type === props.type) {
+            return <ToolBoardCheckBox
+                key={e.type}
+                styles="w-9 h-9 mr-1 ml-1 mt-0.125"
+                value={e.type}
+                checked={props.type === e.type}
+                value={e.type}
+                icon={e.icon}
+            />
+        }
+    })
+    const displaySubObject = subObject.map(e => {
+        return <ToolBoardCheckBox
+            key={e.type}
+            styles="w-7 h-7 mr-1 ml-1 mt-0.125"
+            value={e.type}
+            checked={props.type === e.type}
+            value={e.type}
+            icon={e.icon}
+        />
+    })
     const handleChangePen = (e) => {
         props.setPen(e.target.value)
     }
     const handleChangeColor = (e) => {
         props.setColor(e.target.value)
     }
-
     return (
-        <div className="flex border-2 border-black h-10  w-3/12 rounded-lg">
-            <div className=' w-10 h-10  border-black border-2 '>
-                Select
-            </div>
-            <div className=' w-10 h-10  border-black border-2'>
-                Pen
-            </div>
-            <div className=' w-10 h-10  border-black border-2'>
-                Tay
-            </div>
-            <div className=' w-10 h-10  border-black border-2'>
-                Chon Hinh
-            </div>
-            {/* <div onChange={handleChangePen}>
-                <label htmlFor="pen"></label>
-                <select name="pen" value = {props.pen}>
-                <option value="pencil">Pencil</option>
-                    <option value="select">Select</option>
-                    <option value="line">Line</option>
-                    <option value="rectag">Rectag</option>
-                    <option value="cycle">Cycle</option>
-                </select>
-            </div>
-            <div onChange={handleChangeColor}>
-                <label htmlFor="color"></label>
-                <select name="color" value = {props.color}>
-                    <option value="black">Black</option>
-                    <option value="red">Red</option>
-                    <option value="green">Green</option>
-                    <option value="blue">Blue</option>
-                </select>
-            </div> */}
+        <>
+            <div className='absolute bottom-14 left-47/100'>
+                {props.type === "rectag" || props.type === "cycle" || props.type === "line" ?
+                    <div className='flex border-2 border-black h-9 w-46 rounded-lg' onChange={handleChangePen}>
+                        {displaySubObject}
 
-        </div >
+                    </div>
+                    : null
+                }
+            </div>
+            <div className="flex border-2 border-black h-11 w-46 rounded-lg" onChange={handleChangePen}>
+                {displayOption}
+                {displayObject}
+            </div >
+        </>
     )
 }

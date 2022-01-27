@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react'
-import ToolBoard from './ToolBoard'
+import { useParams } from 'react-router-dom'
+import { fabric } from "fabric"
+
 import { v4 as uuidv4 } from 'uuid'
 
-import { fabric } from "fabric"
-import "./BoardDraw.css"
-import { useParams } from 'react-router-dom'
+import ToolBoard from './ToolBoard'
+
+import { ReactComponent as Delete } from "../svg/delete.svg";
 
 const getAbsLeft = (objects) => {
    if (objects.group) {
@@ -32,11 +34,10 @@ const getAbsScaleY = (objects) => {
 }
 
 function BoardFabricNew() {
-   console.log(window.innerWidth, window.innerHeight)
    const { id } = useParams()
    const [socket, setSocket] = useState(null)
    const [option, setOption] = useState({
-      pen: "select",
+      pen: "mouse",
       isDrawing: false,
       color: "black"
    })
@@ -254,7 +255,7 @@ function BoardFabricNew() {
    }
    const handleMouseDown = (event) => {
       const payload = make_object(event)
-      if (option.pen === "select") {
+      if (option.pen === "mouse") {
          setObjectDraw(null)
          return
       }
@@ -296,7 +297,7 @@ function BoardFabricNew() {
             }
          }))
       }
-      setOption({ ...option, isDrawing: false, pen: "select" })
+      setOption({ ...option, isDrawing: false, pen: "mouse" })
    }
 
    const handleScalling = () => {
@@ -393,17 +394,16 @@ function BoardFabricNew() {
    return (
       <>
 
-         <canvas id="board" width={window.innerWidth} height={(window.innerHeight - 100)}>
-         </canvas  >
-         <div className='flex justify-center '>
-               <ToolBoard
-                  setPen={(e) => { setOption({ ...option, pen: e }) }}
-                  setColor={(e) => { setOption({ ...option, color: e }) }}
-                  pen={option.pen}
-                  color={option.color}
-               />
-               <button onClick={handleClear}>Clear</button>
-            </div>
+         <canvas id="board" width={window.innerWidth} height={window.innerHeight* 0.78} className=' border-2 border-black'/>
+         <div className='fixed flex justify-center top-86/100 left-4/10'>
+            <ToolBoard
+               setPen={(e) => { setOption({ ...option, pen: e }) }}
+               setColor={(e) => { setOption({ ...option, color: e }) }}
+               type={option.pen}
+               color={option.color}
+            />
+            <button onClick={handleClear}><Delete /></button>
+         </div>
       </>
    )
 }
