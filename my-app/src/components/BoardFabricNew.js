@@ -63,7 +63,6 @@ function BoardFabricNew() {
          }
          socket.onmessage = ((e) => {
             let dataFromServer = JSON.parse(e.data)
-            console.log(dataFromServer)
             handleDraw(dataFromServer)
          })
       }
@@ -82,7 +81,7 @@ function BoardFabricNew() {
                   type: "line",
                   stroke: option.color,
                }
-            }
+            };
          case ('rectag'):
             return {
                pointer: pointer,
@@ -96,7 +95,7 @@ function BoardFabricNew() {
                   fill: "white",
                   type: "rectag"
                }
-            }
+            };
          case ('cycle'):
             return {
                pointer: pointer,
@@ -110,7 +109,7 @@ function BoardFabricNew() {
                   stroke: option.color,
                   type: "cycle"
                }
-            }
+            };
          case ('pencil'):
             return {
                pointer: pointer,
@@ -119,9 +118,9 @@ function BoardFabricNew() {
                   stroke: option.color,
                   type: "pencil"
                }
-            }
-      }
-   }
+            };
+      };
+   };
 
    const handleDraw = (message) => {
 
@@ -129,68 +128,76 @@ function BoardFabricNew() {
          case ("add-objects"):
             let objectDrawing
             let originCoordinateUpdating
-            if (message['message']['option'].type === "line") {
-               objectDrawing = new fabric.Line(message['message'].coordinate, message['message']['option'])
-            }
-            else if (message['message']['option'].type === "rectag") {
-               objectDrawing = new fabric.Rect(message['message']['option'])
-               originCoordinateUpdating = {
-                  x: message['message']['pointer'].x,
-                  y: message['message']['pointer'].y
-               }
-            }
-            else if (message['message']['option'].type === "cycle") {
-               objectDrawing = new fabric.Circle(message['message']['option'])
-               originCoordinateUpdating = {
-                  x: message['message']['pointer'].x,
-                  y: message['message']['pointer'].y
-               }
-            }
-            else if (message['message']['option'].type === "pencil") {
-               objectDrawing = new fabric.PencilBrush(message['message']['option']);
-            }
-            setObjectDraw(objectDrawing)
-            setOriginCoordinate(originCoordinateUpdating)
-            canvas.add(objectDrawing)
-            break
-         case ("set-coordinate"):
-            if (message['message'].type === "line" && objectDraw) {
-               objectDraw.set({
-                  x2: message['message']['pointer'].x,
-                  y2: message['message']['pointer'].y,
-               })
-            }
-            else if (message['message'].type === "rectag" && objectDraw && originCoordinate) {
-               if (originCoordinate.x > message['message']['pointer'].x) {
-                  objectDraw.set({
-                     left: Math.abs(message['message']['pointer'].x)
-                  })
-               }
-               if (originCoordinate.y > message['message']['pointer'].y) {
-                  objectDraw.set({
-                     top: Math.abs(message['message']['pointer'].y)
-                  })
-               }
-               objectDraw.set({
-                  width: Math.abs(originCoordinate.x - message['message']['pointer'].x)
-               })
-               objectDraw.set({
-                  height: Math.abs(originCoordinate.y - message['message']['pointer'].y)
-               })
+            switch (message['message']['option'].type) {
+               case 'line':
+                  objectDrawing = new fabric.Line(message['message'].coordinate, message['message']['option']);
+                  break;
+               case 'rectag':
+                  objectDrawing = new fabric.Rect(message['message']['option']);
+                  originCoordinateUpdating = {
+                     x: message['message']['pointer'].x,
+                     y: message['message']['pointer'].y
+                  };
+                  break;
+               case 'cycle':
+                  objectDrawing = new fabric.Circle(message['message']['option']);
+                  originCoordinateUpdating = {
+                     x: message['message']['pointer'].x,
+                     y: message['message']['pointer'].y
+                  };
+                  break;
+               case 'pencil':
 
+                  break;
+               default:
+                  break;
+            };
+            if (objectDrawing) {
+               setObjectDraw(objectDrawing);
+               setOriginCoordinate(originCoordinateUpdating);
+               canvas.add(objectDrawing);
             }
-            else if (message['message'].type === "cycle" && objectDraw && originCoordinate) {
-               objectDraw.set({
-                  radius: Math.abs(originCoordinate.x - message['message']['pointer'].x)
-               })
-            }
-            else if (message['message'].type === "pencil") {
-               objectDraw.isDrawingMode = true;
-            }
+            break;
+         case ("set-coordinate"):
             if (objectDraw) {
-               objectDraw.setCoords()
+               switch (message['message'].type) {
+                  case 'line':
+                     objectDraw.set({
+                        x2: message['message']['pointer'].x,
+                        y2: message['message']['pointer'].y,
+                     });
+                     break;
+                  case 'rectag':
+                     if (originCoordinate.x > message['message']['pointer'].x) {
+                        objectDraw.set({
+                           left: Math.abs(message['message']['pointer'].x)
+                        })
+                     }
+                     if (originCoordinate.y > message['message']['pointer'].y) {
+                        objectDraw.set({
+                           top: Math.abs(message['message']['pointer'].y)
+                        })
+                     }
+                     objectDraw.set({
+                        width: Math.abs(originCoordinate.x - message['message']['pointer'].x)
+                     })
+                     objectDraw.set({
+                        height: Math.abs(originCoordinate.y - message['message']['pointer'].y)
+                     })
+                     break;
+                  case 'cycle':
+                     objectDraw.set({
+                        radius: Math.abs(originCoordinate.x - message['message']['pointer'].x)
+                     })
+                     break;
+                  case 'pencil':
+                    
+                     break;
+                  default:
+                     break;
+               }
             }
-            break
+            break;
          case ("modify-objects"):
             // get all objects in canvas
             const objects_modify = canvas.getObjects()
@@ -209,9 +216,9 @@ function BoardFabricNew() {
             })
             break
          case ("remove-objects"):
-            const objects_action = canvas.getObjects()
-            const selectedObjects_remove = objects_action.filter(object => object.id === message['message'].id)
-            canvas.remove(selectedObjects_remove[0])
+            const objectActions = canvas.getActiveObjects()
+            canvas.discardActiveObject();
+            canvas.remove(...objectActions);
             break
          case ("copy-objects"):
             const object_sel = canvas.getObjects()
@@ -253,7 +260,9 @@ function BoardFabricNew() {
       }
       canvas.renderAll()
    }
+
    const handleMouseDown = (event) => {
+
       const payload = make_object(event)
       if (option.pen === "mouse") {
          setObjectDraw(null)
@@ -263,8 +272,10 @@ function BoardFabricNew() {
          event: "add-objects",
          message: payload
       }
-      socket.send(JSON.stringify(msg))
-      handleDraw(msg)
+      if (socket) {
+         socket.send(JSON.stringify(msg))
+         handleDraw(msg)
+      }
       setOption({ ...option, isDrawing: true })
    }
 
@@ -333,11 +344,8 @@ function BoardFabricNew() {
       let id = !objects_selected ? null : objects_selected.id
       let eventType = null;
       let msg = null;
-      if (event.ctrlKey || event.metaKey) {
+      if (event.ctrlKey || event.metaKey && id !== null) {
          switch (event.keyCode) {
-            case 8:
-               eventType = "remove-objects"
-               break
             case vKey:
                eventType = "paste-objects"
                break
@@ -345,16 +353,20 @@ function BoardFabricNew() {
                eventType = "copy-objects"
                break
          }
-         msg = {
-            event: eventType,
-            message: {
-               id: id
-            }
-         }
-         console.log(msg)
-         socket.send(JSON.stringify(msg))
-         handleDraw(msg)
       }
+      else if (event.keyCode === 8) {
+         eventType = "remove-objects"
+      }
+      msg = {
+         event: eventType,
+         message: {
+            id: id
+         }
+      }
+
+      socket.send(JSON.stringify(msg))
+      handleDraw(msg)
+
    }
 
    useEffect(() => {
@@ -394,7 +406,7 @@ function BoardFabricNew() {
    return (
       <>
 
-         <canvas id="board" width={window.innerWidth} height={window.innerHeight* 0.78} className=' border-2 border-black'/>
+         <canvas id="board" width={window.innerWidth} height={window.innerHeight * 0.78} className=' border-2 border-black' />
          <div className='fixed flex justify-center top-86/100 left-4/10'>
             <ToolBoard
                setPen={(e) => { setOption({ ...option, pen: e }) }}
