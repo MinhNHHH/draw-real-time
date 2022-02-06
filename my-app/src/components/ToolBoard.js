@@ -89,9 +89,7 @@ export default function ToolBoard(props) {
         }
         props.setPen(e.target.value)
     }
-    const handleChangeColor = (e) => {
-        props.setColor(e.target.value)
-    }
+
     return (
         <>
             <div className='absolute bottom-14 left-47/100'>

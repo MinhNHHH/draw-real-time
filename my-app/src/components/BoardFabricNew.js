@@ -5,7 +5,7 @@ import { fabric } from "fabric"
 import { v4 as uuidv4 } from 'uuid'
 
 import ToolBoard from './ToolBoard'
-
+import StyleColor from './StyleColor'
 import { ReactComponent as Delete } from "../svg/delete.svg";
 
 const getAbsLeft = (objects) => {
@@ -47,11 +47,8 @@ function BoardFabricNew() {
    const [objectCopy, setObjectCopy] = useState(null)
    useEffect(() => {
       const canvasElement = new fabric.Canvas('board')
-      canvasElement.set({
-         width: window.innerWidth,
-         height: window.innerHeight - 200
-      })
       const onSocket = new WebSocket(`wss://draw-realtime-socket.herokuapp.com/` + `${id}`)
+      //const onSocket = new WebSocket("ws://localhost:8000/" + `${id}`)
       setCanvas(canvasElement)
       setSocket(onSocket)
    }, [])
@@ -63,6 +60,7 @@ function BoardFabricNew() {
          }
          socket.onmessage = ((e) => {
             let dataFromServer = JSON.parse(e.data)
+            console.log(dataFromServer)
             handleDraw(dataFromServer)
          })
       }
@@ -147,7 +145,11 @@ function BoardFabricNew() {
                   };
                   break;
                case 'pencil':
-
+                  // canvas.isDrawingMode = true;
+                  // objectDrawing = canvas
+                  // objectDrawing.width = 5;
+                  // objectDrawing.color = '#00aeff';
+                  // objectDrawing._onMouseDown(message['message']['pointer'])
                   break;
                default:
                   break;
@@ -155,7 +157,10 @@ function BoardFabricNew() {
             if (objectDrawing) {
                setObjectDraw(objectDrawing);
                setOriginCoordinate(originCoordinateUpdating);
-               canvas.add(objectDrawing);
+               if (message['message']['option'].type !== 'pencil') {
+                  canvas.add(objectDrawing);
+               }
+
             }
             break;
          case ("set-coordinate"):
@@ -191,18 +196,28 @@ function BoardFabricNew() {
                      })
                      break;
                   case 'pencil':
-                    
+                     // objectDraw['path'].push([`Q`,message['message']['pointer'].x,message['message']['pointer'].y])
+                     // canvas.isDrawingMode = true
+                     // canvas.freeDrawingBrush.color = 'red'
+                     // canvas.freeDrawingBrush.width = 5
+                     // canvas.freeDrawingBrush['_points'].push(new fabric.Point(message['message']['pointer'].x,message['message']['pointer'].y))
+                     // console.log("move", canvas)
+                     // objectDraw.onMouseMove(message['message']['pointer'])
                      break;
                   default:
                      break;
                }
             }
             break;
+         // case ("move-up"):
+         //    objectDraw.onMouseUp(message['message']['pointer'])
+         //    break;
          case ("modify-objects"):
             // get all objects in canvas
             const objects_modify = canvas.getObjects()
             const selectedObjects = objects_modify.filter(object => object.id === message['message'].id)
             selectedObjects.forEach(object => {
+               canvas.setActiveObject(object)
                object.set({
                   top: message['message'].top,
                   left: message['message'].left,
@@ -264,33 +279,47 @@ function BoardFabricNew() {
    const handleMouseDown = (event) => {
 
       const payload = make_object(event)
-      if (option.pen === "mouse") {
-         setObjectDraw(null)
-         return
+      switch (option.pen) {
+         case ('mouse'):
+            setObjectDraw(null)
+            break;
+         case ('pencil'):
+            canvas.isDrawingMode = true
+            break;
+         default:
+            const object_active = canvas.getActiveObject()
+            if (object_active) {
+               setOption({ ...option, isDrawing: false, pen: "mouse" })
+               return
+            }
+
+            let msg = {
+               event: "add-objects",
+               message: payload
+            }
+
+            if (socket) {
+               socket.send(JSON.stringify(msg))
+               handleDraw(msg)
+               setOption({ ...option, isDrawing: true })
+            }
+            break;
       }
-      let msg = {
-         event: "add-objects",
-         message: payload
-      }
-      if (socket) {
-         socket.send(JSON.stringify(msg))
-         handleDraw(msg)
-      }
-      setOption({ ...option, isDrawing: true })
    }
 
    const handleMouseMove = (event) => {
       let pointer = canvas.getPointer(event.e)
-      const object_active = canvas.getActiveObject()
-      if (object_active) {
-         return
-      }
       let msg = {
          event: "set-coordinate",
          message: {
             type: option.pen,
             pointer: pointer
          }
+      }
+      if (option.pen === 'pencil') {
+         canvas.isDrawingMode = true
+         canvas.freeDrawingBrush.color = "red"
+         canvas.freeDrawingBrush.width = 10
       }
       if (socket && option.isDrawing) {
          socket.send(JSON.stringify(msg))
@@ -308,6 +337,15 @@ function BoardFabricNew() {
             }
          }))
       }
+      // socket.send(JSON.stringify({
+      //    event: "move-up",
+      //    message: {
+      //       type: option.pen,
+      //       pointer: pointer
+      //    }
+      // }))
+
+      canvas.isDrawingMode = false
       setOption({ ...option, isDrawing: false, pen: "mouse" })
    }
 
@@ -405,14 +443,17 @@ function BoardFabricNew() {
 
    return (
       <>
-
-         <canvas id="board" width={window.innerWidth} height={window.innerHeight * 0.78} className=' border-2 border-black' />
+         <div className='fixed right-0'>
+            <StyleColor />
+         </div>
+         <canvas id="board" width={window.innerWidth} height={window.innerHeight} className=' border-2 border-black' />
          <div className='fixed flex justify-center top-86/100 left-4/10'>
             <ToolBoard
-               setPen={(e) => { setOption({ ...option, pen: e }) }}
-               setColor={(e) => { setOption({ ...option, color: e }) }}
+               setPen={(e) => {
+                  setOption({ ...option, pen: e })
+                  canvas.discardActiveObject();
+               }}
                type={option.pen}
-               color={option.color}
             />
             <button onClick={handleClear}><Delete /></button>
          </div>
