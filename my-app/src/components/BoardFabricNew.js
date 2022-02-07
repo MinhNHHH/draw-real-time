@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { useParams } from 'react-router-dom'
 import { fabric } from "fabric"
 
@@ -39,7 +39,8 @@ function BoardFabricNew() {
    const [option, setOption] = useState({
       pen: "mouse",
       isDrawing: false,
-      color: "black"
+      color: "black",
+      strokeWidth : 2
    })
    const [objectDraw, setObjectDraw] = useState(null)
    const [originCoordinate, setOriginCoordinate] = useState(null)
@@ -47,8 +48,8 @@ function BoardFabricNew() {
    const [objectCopy, setObjectCopy] = useState(null)
    useEffect(() => {
       const canvasElement = new fabric.Canvas('board')
-      const onSocket = new WebSocket(`wss://draw-realtime-socket.herokuapp.com/` + `${id}`)
-      //const onSocket = new WebSocket("ws://localhost:8000/" + `${id}`)
+      // const onSocket = new WebSocket(`wss://draw-realtime-socket.herokuapp.com/` + `${id}`)
+      const onSocket = new WebSocket("ws://localhost:8000/" + `${id}`)
       setCanvas(canvasElement)
       setSocket(onSocket)
    }, [])
@@ -78,6 +79,7 @@ function BoardFabricNew() {
                   id: uuidv4(),
                   type: "line",
                   stroke: option.color,
+                  strokeWidth : option.strokeWidth,
                }
             };
          case ('rectag'):
@@ -90,6 +92,7 @@ function BoardFabricNew() {
                   width: pointer.x - origin_X,
                   height: pointer.y - origin_Y,
                   stroke: option.color,
+                  strokeWidth : option.strokeWidth,
                   fill: "white",
                   type: "rectag"
                }
@@ -105,6 +108,8 @@ function BoardFabricNew() {
                   originX: 'center',
                   originY: 'center',
                   stroke: option.color,
+                  strokeWidth : option.strokeWidth,
+                  fill: "white",
                   type: "cycle"
                }
             };
@@ -114,6 +119,7 @@ function BoardFabricNew() {
                option: {
                   id: uuidv4(),
                   stroke: option.color,
+                  strokeWidth : option.strokeWidth,
                   type: "pencil"
                }
             };
@@ -225,7 +231,7 @@ function BoardFabricNew() {
                   width: message['message'].width,
                   scaleX: message['message'].scaleX,
                   scaleY: message['message'].scaleY,
-                  angle: message['message'].angle
+                  angle: message['message'].angle,
                })
                object.setCoords()
             })
@@ -271,7 +277,19 @@ function BoardFabricNew() {
                canvas.add(objectInit)
                objectInit.setCoords()
             })
-            break
+            break;
+         // case ("change-attribute"):
+         //    const objectsInCanvas = canvas.getObjects()
+         //    const objectChange = objectsInCanvas.filter(object => object.id === message['message'].id)
+         //    objectChange.forEach(object => {
+         //       canvas.setActiveObject(object)
+         //       object.set({
+         //          stroke : message['message'].stroke,
+         //          strokeWidth : message['message'].strokeWidth,
+         //       })
+         //       object.setCoords()
+         //    })
+         //    break;
       }
       canvas.renderAll()
    }
@@ -407,6 +425,21 @@ function BoardFabricNew() {
 
    }
 
+   // const handleSelect = useCallback((e) => {
+   //    console.log(e.target)
+   //    let msg = {
+   //       event : "change-attribute",
+   //       message: {
+   //          id : e.target.id,
+   //          stroke: option.color,
+   //          strokeWidth : option.strokeWidth
+   //       }
+   //    }
+   //    if(socket){
+   //       socket.send(JSON.stringify(msg))
+   //       handleDraw(msg)
+   //    }
+   // },[option,socket])
    useEffect(() => {
       if (canvas !== null) {
          document.addEventListener('keydown', handleKeyDown)
@@ -423,6 +456,10 @@ function BoardFabricNew() {
 
          canvas.on("object:moving", handleScalling)
 
+         canvas.on('selection:created', handleSelect)
+
+         canvas.on('selection:updated', handleSelect)
+
          return () => {
             canvas.off("mouse:down", handleMouseDown)
 
@@ -437,16 +474,25 @@ function BoardFabricNew() {
             canvas.off("object:moving", handleScalling)
 
             document.removeEventListener('keydown', handleKeyDown)
+
+            canvas.off('selection:created', handleSelect)
+
+            canvas.off('selection:updated', handleSelect)
          }
       }
    }, [canvas, handleMouseDown])
 
    return (
       <>
-         <div className='fixed right-0'>
-            <StyleColor />
-         </div>
          <canvas id="board" width={window.innerWidth} height={window.innerHeight} className=' border-2 border-black' />
+         <div className='fixed right-0 top-0'>
+            <StyleColor 
+               setColor = {(e) => {
+                  setOption({ ...option , color : e})
+               }}
+               color = {option.color}
+            />
+         </div>
          <div className='fixed flex justify-center top-86/100 left-4/10'>
             <ToolBoard
                setPen={(e) => {

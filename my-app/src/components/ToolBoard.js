@@ -8,9 +8,7 @@ import { ReactComponent as Line } from "../svg/line.svg";
 
 
 import ToolBoardCheckBox from './ToolBoardCheckBox';
-export default function ToolBoard(props) {
-    console.log(props.type)
-    
+export default function ToolBoard(props) {    
     const [displaySubObjects, setDisplaySubObjects] = useState(false)
     const [listOptions, setListOptions] = useState([
         {
