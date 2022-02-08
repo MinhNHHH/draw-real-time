@@ -40,7 +40,7 @@ function BoardFabricNew() {
       pen: "mouse",
       isDrawing: false,
       color: "black",
-      strokeWidth : 2
+      strokeWidth: 2
    })
    const [objectDraw, setObjectDraw] = useState(null)
    const [originCoordinate, setOriginCoordinate] = useState(null)
@@ -79,7 +79,7 @@ function BoardFabricNew() {
                   id: uuidv4(),
                   type: "line",
                   stroke: option.color,
-                  strokeWidth : option.strokeWidth,
+                  strokeWidth: option.strokeWidth,
                }
             };
          case ('rectag'):
@@ -92,7 +92,7 @@ function BoardFabricNew() {
                   width: pointer.x - origin_X,
                   height: pointer.y - origin_Y,
                   stroke: option.color,
-                  strokeWidth : option.strokeWidth,
+                  strokeWidth: option.strokeWidth,
                   fill: "white",
                   type: "rectag"
                }
@@ -108,7 +108,7 @@ function BoardFabricNew() {
                   originX: 'center',
                   originY: 'center',
                   stroke: option.color,
-                  strokeWidth : option.strokeWidth,
+                  strokeWidth: option.strokeWidth,
                   fill: "white",
                   type: "cycle"
                }
@@ -119,7 +119,7 @@ function BoardFabricNew() {
                option: {
                   id: uuidv4(),
                   stroke: option.color,
-                  strokeWidth : option.strokeWidth,
+                  strokeWidth: option.strokeWidth,
                   type: "pencil"
                }
             };
@@ -127,7 +127,7 @@ function BoardFabricNew() {
    };
 
    const handleDraw = (message) => {
-
+      const objectInCanvas = canvas.getObjects()
       switch (message.event) {
          case ("add-objects"):
             let objectDrawing
@@ -215,13 +215,10 @@ function BoardFabricNew() {
                }
             }
             break;
-         // case ("move-up"):
-         //    objectDraw.onMouseUp(message['message']['pointer'])
-         //    break;
+
          case ("modify-objects"):
             // get all objects in canvas
-            const objects_modify = canvas.getObjects()
-            const selectedObjects = objects_modify.filter(object => object.id === message['message'].id)
+            const selectedObjects = objectInCanvas.filter(object => object.id === message['message'].id)
             selectedObjects.forEach(object => {
                canvas.setActiveObject(object)
                object.set({
@@ -237,13 +234,12 @@ function BoardFabricNew() {
             })
             break
          case ("remove-objects"):
-            const objectActions = canvas.getActiveObjects()
+            const objectActions = objectInCanvas.filter(object => { return message['message'].id.indexOf(object.id) !== -1 })
             canvas.discardActiveObject();
             canvas.remove(...objectActions);
             break
          case ("copy-objects"):
-            const object_sel = canvas.getObjects()
-            const selectedObjects_copy = object_sel.filter(object => object.id === message['message'].id)
+            const selectedObjects_copy = objectInCanvas.filter(object => object.id === message['message'].id)
             setObjectCopy(selectedObjects_copy[0])
             break
          case ("paste-objects"):
@@ -278,18 +274,20 @@ function BoardFabricNew() {
                objectInit.setCoords()
             })
             break;
-         // case ("change-attribute"):
-         //    const objectsInCanvas = canvas.getObjects()
-         //    const objectChange = objectsInCanvas.filter(object => object.id === message['message'].id)
-         //    objectChange.forEach(object => {
-         //       canvas.setActiveObject(object)
-         //       object.set({
-         //          stroke : message['message'].stroke,
-         //          strokeWidth : message['message'].strokeWidth,
-         //       })
-         //       object.setCoords()
-         //    })
-         //    break;
+         case ("change-attribute"):
+            const objectChange = objectInCanvas.filter(object => { return message['message'].id.indexOf(object.id) !== -1 })
+            objectChange.forEach(object => {
+               canvas.setActiveObject(object)
+               object.set({
+                  stroke: message['message'].stroke,
+                  strokeWidth: message['message'].strokeWidth,
+               })
+               object.setCoords()
+            })
+            break;
+      }
+      if (objectDraw) {
+         objectDraw.setCoords()
       }
       canvas.renderAll()
    }
@@ -297,6 +295,8 @@ function BoardFabricNew() {
    const handleMouseDown = (event) => {
 
       const payload = make_object(event)
+      const objectActives = canvas.getActiveObjects()
+      let msg
       switch (option.pen) {
          case ('mouse'):
             setObjectDraw(null)
@@ -305,23 +305,20 @@ function BoardFabricNew() {
             canvas.isDrawingMode = true
             break;
          default:
-            const object_active = canvas.getActiveObject()
-            if (object_active) {
+            if (objectActives.length > 0) {
                setOption({ ...option, isDrawing: false, pen: "mouse" })
                return
             }
-
-            let msg = {
+            msg = {
                event: "add-objects",
                message: payload
             }
-
-            if (socket) {
-               socket.send(JSON.stringify(msg))
-               handleDraw(msg)
-               setOption({ ...option, isDrawing: true })
-            }
             break;
+      }
+      if (socket && msg) {
+         socket.send(JSON.stringify(msg))
+         handleDraw(msg)
+         setOption({ ...option, isDrawing: true })
       }
    }
 
@@ -355,13 +352,6 @@ function BoardFabricNew() {
             }
          }))
       }
-      // socket.send(JSON.stringify({
-      //    event: "move-up",
-      //    message: {
-      //       type: option.pen,
-      //       pointer: pointer
-      //    }
-      // }))
 
       canvas.isDrawingMode = false
       setOption({ ...option, isDrawing: false, pen: "mouse" })
@@ -370,7 +360,7 @@ function BoardFabricNew() {
    const handleScalling = () => {
       const objects_selected = canvas.getActiveObjects()
       objects_selected.forEach(object => {
-         socket.send(JSON.stringify({
+         let msg = {
             event: "modify-objects",
             message: {
                id: object.id,
@@ -382,8 +372,9 @@ function BoardFabricNew() {
                scaleY: getAbsScaleY(object),
                angle: object.angle
             }
-         }))
-
+         }
+         socket.send(JSON.stringify(msg))
+         handleDraw(msg)
       })
    }
 
@@ -396,8 +387,8 @@ function BoardFabricNew() {
    const handleKeyDown = (event) => {
       const vKey = 86
       const cKey = 67
-      const objects_selected = canvas.getActiveObject()
-      let id = !objects_selected ? null : objects_selected.id
+      const objects_selected = canvas.getActiveObjects()
+      let id = !objects_selected ? null : objects_selected.map(e => { return e.id })
       let eventType = null;
       let msg = null;
       if (event.ctrlKey || event.metaKey && id !== null) {
@@ -419,27 +410,27 @@ function BoardFabricNew() {
             id: id
          }
       }
-
       socket.send(JSON.stringify(msg))
       handleDraw(msg)
-
    }
 
-   // const handleSelect = useCallback((e) => {
-   //    console.log(e.target)
-   //    let msg = {
-   //       event : "change-attribute",
-   //       message: {
-   //          id : e.target.id,
-   //          stroke: option.color,
-   //          strokeWidth : option.strokeWidth
-   //       }
-   //    }
-   //    if(socket){
-   //       socket.send(JSON.stringify(msg))
-   //       handleDraw(msg)
-   //    }
-   // },[option,socket])
+   const handleChangeColor = (e) => {
+      const objectActives = canvas.getActiveObjects()
+      setOption({ ...option, color: e })
+      objectActives.forEach(object => {
+         let msg = {
+            event: "change-attribute",
+            message: {
+               id: object.id,
+               stroke: e,
+               strokeWidth: option.strokeWidth
+            }
+         }
+         socket.send(JSON.stringify(msg))
+         handleDraw(msg)
+      })
+   }
+
    useEffect(() => {
       if (canvas !== null) {
          document.addEventListener('keydown', handleKeyDown)
@@ -456,9 +447,6 @@ function BoardFabricNew() {
 
          canvas.on("object:moving", handleScalling)
 
-         canvas.on('selection:created', handleSelect)
-
-         canvas.on('selection:updated', handleSelect)
 
          return () => {
             canvas.off("mouse:down", handleMouseDown)
@@ -475,9 +463,6 @@ function BoardFabricNew() {
 
             document.removeEventListener('keydown', handleKeyDown)
 
-            canvas.off('selection:created', handleSelect)
-
-            canvas.off('selection:updated', handleSelect)
          }
       }
    }, [canvas, handleMouseDown])
@@ -486,11 +471,11 @@ function BoardFabricNew() {
       <>
          <canvas id="board" width={window.innerWidth} height={window.innerHeight} className=' border-2 border-black' />
          <div className='fixed right-0 top-0'>
-            <StyleColor 
-               setColor = {(e) => {
-                  setOption({ ...option , color : e})
+            <StyleColor
+               setColor={(e) => {
+                  handleChangeColor(e)
                }}
-               color = {option.color}
+               color={option.color}
             />
          </div>
          <div className='fixed flex justify-center top-86/100 left-4/10'>

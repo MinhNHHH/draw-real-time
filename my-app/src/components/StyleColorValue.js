@@ -12,7 +12,7 @@ export default function StyleColorValue(props) {
                     type="checkbox"
                     name="option"
                 />
-                <div><IconColor stroke = {props.value}/></div>
+                <div>{props.icon}</div>
             </label>
         </>
     );

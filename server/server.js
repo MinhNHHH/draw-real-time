@@ -3,7 +3,6 @@ const PORT = process.env.PORT || 8000;
 const wsServer = new WebSocketServer({ port: PORT });
 const list_room = [];
 function update_dic(a, b) {
-  console.log(b)
   for (key in b) {
     a[key] = b[key]
   };
@@ -32,24 +31,28 @@ class Room {
         let temporary = message['message']['object'];
         temporary['id'] = message['message']['id'];
         if (!this.object_draw.find(o => o.id === temporary.id)) {
-          console.log("add object draw")
           this.object_draw.push(temporary);
         }
-        break
+        break;
       case ("modify-objects"):
-        const object_update = this.object_draw.find(o => o.id === message['message'].id);
-        update_dic(object_update, message['message']);
-        break
+        const objectUpdate = this.object_draw.find(o => o.id === message['message'].id);
+        update_dic(objectUpdate, message['message']);
+        break;
       case ("clear-canvas"):
         this.object_draw.length = 0;
-        break
+        break;
       case ("remove-objects"):
-        const object_removed = this.object_draw.find(o => o.id === message['message'].id);
-        const index_object = this.object_draw.indexOf(object_removed)
-        this.object_draw.splice(index_object, 1);
-        break
+        this.object_draw = this.object_draw.filter((object) => {
+          return message['message'].id.indexOf(object.id) === -1;
+        });
+        break;
       case ("paste-objects"):
-        console.log(message['message'])
+        console.log(message['message']);
+        break;
+      case ("change-attribute"):
+        const objectChangeAttribute = this.object_draw.find(o => o.id === message['message'].id);
+        update_dic(objectChangeAttribute, message['message']);
+        break;
     };
   };
 
@@ -73,6 +76,7 @@ class Room {
 wsServer.on('connection', (ws, request) => {
   // check room existed and create room and add connection
   let room = list_room.find(r => r.room_id === request.url);
+  
   if (!room) {
     room = new Room(request.url);
     list_room.push(room);
@@ -85,7 +89,6 @@ wsServer.on('connection', (ws, request) => {
     object_existed: room.object_draw
   }));
   ws.on('message', (message) => {
-    console.log("room", list_room)
     const msg = JSON.parse(message.toString('utf-8'));
     // handle message 
     room.handleMessage(msg);
