@@ -12,6 +12,9 @@ function StyleColor(props) {
         setDisplayColorTable(true)
     }
 
+    const handleChangeStrokeWidth = (e) => {
+        props.setStrokeWidth(e.target.value)
+    }
     const handleChangeColor = (e) => {
         props.setColor(e.target.value)
     }
@@ -66,7 +69,7 @@ function StyleColor(props) {
                     </div>
                     <div className='flex relative top-3 right-9 w-32 border-2 rounded-lg p-1'>
                         <span>Size</span>
-                        <div className='flex flex-wrap h-6 justify-around' onChange={handleChangeColor}>
+                        <div className='flex flex-wrap h-6 justify-around' onChange={handleChangeStrokeWidth}>
                             {listSizeMap}
                         </div>
                     </div>

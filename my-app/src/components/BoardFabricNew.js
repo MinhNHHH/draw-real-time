@@ -40,7 +40,7 @@ function BoardFabricNew() {
       pen: "mouse",
       isDrawing: false,
       color: "black",
-      strokeWidth: 2
+      strokeWidth: 3
    })
    const [objectDraw, setObjectDraw] = useState(null)
    const [originCoordinate, setOriginCoordinate] = useState(null)
@@ -48,8 +48,8 @@ function BoardFabricNew() {
    const [objectCopy, setObjectCopy] = useState(null)
    useEffect(() => {
       const canvasElement = new fabric.Canvas('board')
-      // const onSocket = new WebSocket(`wss://draw-realtime-socket.herokuapp.com/` + `${id}`)
-      const onSocket = new WebSocket("ws://localhost:8000/" + `${id}`)
+      const onSocket = new WebSocket(`wss://draw-realtime-socket.herokuapp.com/` + `${id}`)
+      // const onSocket = new WebSocket("ws://localhost:8000/" + `${id}`)
       setCanvas(canvasElement)
       setSocket(onSocket)
    }, [])
@@ -280,7 +280,6 @@ function BoardFabricNew() {
                canvas.setActiveObject(object)
                object.set({
                   stroke: message['message'].stroke,
-                  strokeWidth: message['message'].strokeWidth,
                })
                object.setCoords()
             })
@@ -423,13 +422,29 @@ function BoardFabricNew() {
             message: {
                id: object.id,
                stroke: e,
-               strokeWidth: option.strokeWidth
+
             }
          }
          socket.send(JSON.stringify(msg))
          handleDraw(msg)
       })
    }
+
+   // const handleChangeStrokeWidth = (e) => {
+   //    const objectActive = canvas.getActiveObjects()
+   //    setOption({ ...option, strokeWidth: e })
+   //    objectActive.forEach(object => {
+   //       let msg = {
+   //          event: "change-attribute",
+   //          message: {
+   //             id: object.id,
+   //             strokeWidth: e,
+   //          }
+   //       }
+   //       socket.send(JSON.stringify(msg))
+   //       handleDraw(msg)
+   //    })
+   // }
 
    useEffect(() => {
       if (canvas !== null) {
