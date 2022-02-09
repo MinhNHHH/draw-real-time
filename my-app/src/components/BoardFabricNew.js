@@ -42,6 +42,7 @@ function BoardFabricNew() {
       color: "black",
       strokeWidth: 2
    })
+   const [displayColorTabel,setDisplayColorTable] = useState(false)
    const [objectDraw, setObjectDraw] = useState(null)
    const [originCoordinate, setOriginCoordinate] = useState(null)
    const [canvas, setCanvas] = useState(null)
@@ -66,7 +67,12 @@ function BoardFabricNew() {
          })
       }
    }, [canvas, objectDraw, originCoordinate, objectCopy])
-
+   const handleDisplayColorTable = () => {
+      setDisplayColorTable(true)
+   }
+   const handleCloseColorTable = () => {
+      setDisplayColorTable(false)
+   }
    const make_object = (event) => {
       let pointer = canvas.getPointer(event.e)
       const origin_X = pointer.x
@@ -219,10 +225,8 @@ function BoardFabricNew() {
             break;
 
          case ("modify-objects"):
-            // get all objects in canvas
             const selectedObjects = objectInCanvas.filter(object => object.id === message['message'].id)
             selectedObjects.forEach(object => {
-               canvas.setActiveObject(object)
                object.set({
                   top: message['message'].top,
                   left: message['message'].left,
@@ -232,6 +236,7 @@ function BoardFabricNew() {
                   scaleY: message['message'].scaleY,
                   angle: message['message'].angle,
                })
+               // canvas.setActiveObject(object)
                object.setCoords()
             })
             break
@@ -306,6 +311,7 @@ function BoardFabricNew() {
       let msg
       switch (option.pen) {
          case ('mouse'):
+            handleCloseColorTable()
             setObjectDraw(null)
             break;
          case ('pencil'):
@@ -498,7 +504,8 @@ function BoardFabricNew() {
                setAttribute={handleChangeAttribute}
                color={option.color}
                strokeWidth = {option.strokeWidth}
-            // setStrokeWidth = {handleChangeStrokeWidth}
+               displayColorTabel = {displayColorTabel}
+               handleDisplayColorTable = {handleDisplayColorTable}
             />
          </div>
          <div className='fixed flex justify-center top-86/100 left-4/10'>

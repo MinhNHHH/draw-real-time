@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import ToolBoardCheckBox from './ToolBoardCheckBox';
 import { ReactComponent as IconColor } from "../svg/coloricon.svg"
 import { ReactComponent as SizeL } from "../svg/sizeL.svg"
@@ -6,18 +6,10 @@ import { ReactComponent as SizeM } from "../svg/sizeM.svg"
 import { ReactComponent as SizeS } from "../svg/sizeS.svg"
 
 function StyleColor(props) {
-    const [displayColorTabel, setDisplayColorTable] = useState(false)
-
-    const handleChangeStateColorTable = () => {
-        setDisplayColorTable(true)
-    }
-
     const handleChangeAttribute = (e) => {
         props.setAttribute(e.target)
     }
-    // const handleChangeColor = (e) => {
-    //     props.setColor(e.target.value)
-    // }
+
     const listColor = ["black", "red", "blue", "green", "brown", "#7746f1"]
 
     const listSize = [
@@ -26,12 +18,12 @@ function StyleColor(props) {
             size: 2
         },
         {
-            icon: <SizeL />,
-            size: 10
-        },
-        {
             icon: <SizeM />,
             size: 5
+        },
+        {
+            icon: <SizeL />,
+            size: 10
         }
     ]
 
@@ -62,12 +54,12 @@ function StyleColor(props) {
     })
 
     return (
-        <div className='w-24 h-11 m-2 border-2 rounded-lg' onClick={handleChangeStateColorTable}>
+        <div className='w-24 h-11 m-2 border-2 rounded-lg' onClick={props.handleDisplayColorTable}>
             <div className=' flex m-2 justify-around'>
                 <p>Styles</p>
                 <div> <IconColor stroke={props.color} /> </div>
             </div>
-            {displayColorTabel ?
+            {props.displayColorTabel ?
                 <div>
                     <div className='flex relative top-3 right-9 w-32 border-2 rounded-lg p-1'>
                         <span>Color</span>
@@ -84,10 +76,7 @@ function StyleColor(props) {
                 </div>
                 : null
             }
-
-
         </div>
-
     )
 }
 
