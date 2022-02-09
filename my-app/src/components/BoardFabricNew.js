@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { fabric } from "fabric"
 
@@ -48,11 +48,11 @@ function BoardFabricNew() {
    const [objectCopy, setObjectCopy] = useState(null)
    useEffect(() => {
       const canvasElement = new fabric.Canvas('board')
-      const onSocket = new WebSocket(`wss://draw-realtime-socket.herokuapp.com/` + `${id}`)
-      // const onSocket = new WebSocket("ws://localhost:8000/" + `${id}`)
+      // const onSocket = new WebSocket(`wss://draw-realtime-socket.herokuapp.com/${id}`)
+      const onSocket = new WebSocket(`ws://localhost:8000/${id}`)
       setCanvas(canvasElement)
       setSocket(onSocket)
-   }, [])
+   }, [id])
 
    useEffect(() => {
       if (socket !== null) {
@@ -123,6 +123,8 @@ function BoardFabricNew() {
                   type: "pencil"
                }
             };
+         default:
+            break;
       };
    };
 
@@ -269,6 +271,9 @@ function BoardFabricNew() {
                      break
                   case ("rectag"):
                      objectInit = new fabric.Rect(o)
+                     break;
+                  default:
+                     break;
                }
                canvas.add(objectInit)
                objectInit.setCoords()
@@ -279,10 +284,13 @@ function BoardFabricNew() {
             objectChange.forEach(object => {
                canvas.setActiveObject(object)
                object.set({
-                  stroke: message['message'].stroke,
+                  stroke: !message['message'].stroke ? option.color : message['message'].stroke,
+                  strokeWidth : !message['message'].strokeWidth ? option.strokeWidth : parseInt(message['message'].strokeWidth) 
                })
                object.setCoords()
             })
+            break;
+         default: 
             break;
       }
       if (objectDraw) {
@@ -390,7 +398,7 @@ function BoardFabricNew() {
       let id = !objects_selected ? null : objects_selected.map(e => { return e.id })
       let eventType = null;
       let msg = null;
-      if (event.ctrlKey || event.metaKey && id !== null) {
+      if ((event.ctrlKey || event.metaKey) && id !== null) {
          switch (event.keyCode) {
             case vKey:
                eventType = "paste-objects"
@@ -398,6 +406,8 @@ function BoardFabricNew() {
             case cKey:
                eventType = "copy-objects"
                break
+            default:
+               break;
          }
       }
       else if (event.keyCode === 8) {
@@ -430,21 +440,21 @@ function BoardFabricNew() {
       })
    }
 
-   // const handleChangeStrokeWidth = (e) => {
-   //    const objectActive = canvas.getActiveObjects()
-   //    setOption({ ...option, strokeWidth: e })
-   //    objectActive.forEach(object => {
-   //       let msg = {
-   //          event: "change-attribute",
-   //          message: {
-   //             id: object.id,
-   //             strokeWidth: e,
-   //          }
-   //       }
-   //       socket.send(JSON.stringify(msg))
-   //       handleDraw(msg)
-   //    })
-   // }
+   const handleChangeStrokeWidth = (e) => {
+      const objectActive = canvas.getActiveObjects()
+      setOption({ ...option, strokeWidth: parseInt(e) })
+      objectActive.forEach(object => {
+         let msg = {
+            event: "change-attribute",
+            message: {
+               id: object.id,
+               strokeWidth: e,
+            }
+         }
+         socket.send(JSON.stringify(msg))
+         handleDraw(msg)
+      })
+   }
 
    useEffect(() => {
       if (canvas !== null) {
@@ -487,10 +497,9 @@ function BoardFabricNew() {
          <canvas id="board" width={window.innerWidth} height={window.innerHeight} className=' border-2 border-black' />
          <div className='fixed right-0 top-0'>
             <StyleColor
-               setColor={(e) => {
-                  handleChangeColor(e)
-               }}
+               setColor={handleChangeColor}
                color={option.color}
+               setStrokeWidth = {handleChangeStrokeWidth}
             />
          </div>
          <div className='fixed flex justify-center top-86/100 left-4/10'>
