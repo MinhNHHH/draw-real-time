@@ -8,7 +8,7 @@ import { ReactComponent as Line } from "../svg/line.svg";
 
 
 import ToolBoardCheckBox from './ToolBoardCheckBox';
-export default function ToolBoard(props) {    
+export default function ToolBoard(props) {
     const [displaySubObjects, setDisplaySubObjects] = useState(false)
     const [listOptions, setListOptions] = useState([
         {
@@ -44,23 +44,25 @@ export default function ToolBoard(props) {
         },
     ]
     let tempListOption = [...listOptions]
-    
+
     const updateListOption = (templist, subOption) => {
-        const indexTempListOption = templist.findIndex(x => x.type === 'rectag' || x.type === 'cycle'|| x.type === 'line')
+        const indexTempListOption = templist.findIndex(x => x.type === 'rectag' || x.type === 'cycle' || x.type === 'line')
         const indexSubListOption = subOption.findIndex(x => x.type === props.type)
-        if (indexSubListOption !== -1){
+        if (indexSubListOption !== -1) {
             templist[indexTempListOption].icon = subOption[indexSubListOption].icon
             templist[indexTempListOption].type = subOption[indexSubListOption].type
         }
         return templist
     }
     useEffect(() => {
-        const newList = updateListOption(tempListOption,subOption)
+        const newList = updateListOption(tempListOption, subOption)
         setListOptions(newList)
-    },[displaySubObjects])
+    }, [displaySubObjects])
 
     const displayOption = listOptions.map(e => {
         return <ToolBoardCheckBox
+            selected={" bg-blue-400 text-white"}
+            hover={"hover:text-blue-200"}
             key={e.type}
             styles="w-9 h-9 mr-1 ml-1 mt-0.125"
             value={e.type}
@@ -72,6 +74,8 @@ export default function ToolBoard(props) {
 
     const displaySubObject = subOption.map(e => {
         return <ToolBoardCheckBox
+            selected={" bg-blue-400 text-white"}
+            hover={"hover:text-blue-200"}
             key={e.type}
             styles="w-9 h-9 mr-1 ml-1 mt-0.125"
             value={e.type}

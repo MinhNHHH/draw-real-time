@@ -40,7 +40,7 @@ function BoardFabricNew() {
       pen: "mouse",
       isDrawing: false,
       color: "black",
-      strokeWidth: 3
+      strokeWidth: 2
    })
    const [objectDraw, setObjectDraw] = useState(null)
    const [originCoordinate, setOriginCoordinate] = useState(null)
@@ -284,13 +284,13 @@ function BoardFabricNew() {
             objectChange.forEach(object => {
                canvas.setActiveObject(object)
                object.set({
-                  stroke: !message['message'].stroke ? option.color : message['message'].stroke,
-                  strokeWidth : !message['message'].strokeWidth ? option.strokeWidth : parseInt(message['message'].strokeWidth) 
+                  stroke: message['message'].stroke,
+                  strokeWidth: parseInt(message['message'].strokeWidth)
                })
                object.setCoords()
             })
             break;
-         default: 
+         default:
             break;
       }
       if (objectDraw) {
@@ -423,32 +423,30 @@ function BoardFabricNew() {
       handleDraw(msg)
    }
 
-   const handleChangeColor = (e) => {
+   const handleChangeAttribute = (e) => {
       const objectActives = canvas.getActiveObjects()
-      setOption({ ...option, color: e })
+      let msg = null
+      let stroke = null
+      let strokeWidth
+      switch (e.name) {
+         case ("strokeWidth"):
+            setOption({ ...option, strokeWidth: parseInt(e.value) })
+            strokeWidth = e.value
+            break;
+         case ("stroke"):
+            setOption({ ...option, color: e.value })
+            stroke = e.value
+            break;
+         default:
+            break;
+      }
       objectActives.forEach(object => {
-         let msg = {
+         msg = {
             event: "change-attribute",
             message: {
                id: object.id,
-               stroke: e,
-
-            }
-         }
-         socket.send(JSON.stringify(msg))
-         handleDraw(msg)
-      })
-   }
-
-   const handleChangeStrokeWidth = (e) => {
-      const objectActive = canvas.getActiveObjects()
-      setOption({ ...option, strokeWidth: parseInt(e) })
-      objectActive.forEach(object => {
-         let msg = {
-            event: "change-attribute",
-            message: {
-               id: object.id,
-               strokeWidth: e,
+               strokeWidth : !parseInt(strokeWidth) ? option.strokeWidth : parseInt(strokeWidth),
+               stroke: !stroke ? option.color : stroke 
             }
          }
          socket.send(JSON.stringify(msg))
@@ -497,9 +495,10 @@ function BoardFabricNew() {
          <canvas id="board" width={window.innerWidth} height={window.innerHeight} className=' border-2 border-black' />
          <div className='fixed right-0 top-0'>
             <StyleColor
-               setColor={handleChangeColor}
+               setAttribute={handleChangeAttribute}
                color={option.color}
-               setStrokeWidth = {handleChangeStrokeWidth}
+               strokeWidth = {option.strokeWidth}
+            // setStrokeWidth = {handleChangeStrokeWidth}
             />
          </div>
          <div className='fixed flex justify-center top-86/100 left-4/10'>

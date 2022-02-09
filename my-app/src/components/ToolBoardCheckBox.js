@@ -9,9 +9,9 @@ function ToolBoardCheckBox(props) {
                     value = {props.value}
                     style={{ display: 'none' }}
                     type="checkbox"
-                    name="option"
+                    name= {props.name}
                 />
-                <div className={checked === true ? " bg-blue-400 text-white" : "hover:text-blue-200"}>{props.icon}</div>
+                <div className={checked === true ?  `${props.selected}` : `${props.hover}`}>{props.icon}</div>
             </label>
         </>
     )

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import StyleColorValue from './StyleColorValue';
+import ToolBoardCheckBox from './ToolBoardCheckBox';
 import { ReactComponent as IconColor } from "../svg/coloricon.svg"
 import { ReactComponent as SizeL } from "../svg/sizeL.svg"
 import { ReactComponent as SizeM } from "../svg/sizeM.svg"
@@ -12,12 +12,12 @@ function StyleColor(props) {
         setDisplayColorTable(true)
     }
 
-    const handleChangeStrokeWidth = (e) => {
-        props.setStrokeWidth(e.target.value)
+    const handleChangeAttribute = (e) => {
+        props.setAttribute(e.target)
     }
-    const handleChangeColor = (e) => {
-        props.setColor(e.target.value)
-    }
+    // const handleChangeColor = (e) => {
+    //     props.setColor(e.target.value)
+    // }
     const listColor = ["black", "red", "blue", "green", "brown", "#7746f1"]
 
     const listSize = [
@@ -37,18 +37,26 @@ function StyleColor(props) {
 
     const listSizeMap = listSize.map(e => {
         return (
-            <StyleColorValue
+            <ToolBoardCheckBox
                 icon={e.icon}
                 key={e.size}
                 value={e.size}
+                name={"strokeWidth"}
+                selected={" bg-blue-400"}
+                hover={"hover:bg-blue-200"}
+                checked={props.strokeWidth === e.size}
             />)
     })
     const listColorMap = listColor.map(e => {
         return (
-            <StyleColorValue
+            <ToolBoardCheckBox
                 icon={<IconColor stroke={e} />}
                 key={e}
                 value={e}
+                name={"stroke"}
+                selected={" bg-blue-400"}
+                hover={"hover:bg-blue-200"}
+                checked={props.color === e}
             />
         )
     })
@@ -63,13 +71,13 @@ function StyleColor(props) {
                 <div>
                     <div className='flex relative top-3 right-9 w-32 border-2 rounded-lg p-1'>
                         <span>Color</span>
-                        <div className='flex flex-wrap h-16 justify-around' onChange={handleChangeColor}>
+                        <div className='flex flex-wrap h-16 justify-around' onChange={handleChangeAttribute}>
                             {listColorMap}
                         </div>
                     </div>
                     <div className='flex relative top-3 right-9 w-32 border-2 rounded-lg p-1'>
                         <span>Size</span>
-                        <div className='flex flex-wrap h-6 justify-around' onChange={handleChangeStrokeWidth}>
+                        <div className='flex flex-wrap h-6 justify-around' onChange={handleChangeAttribute}>
                             {listSizeMap}
                         </div>
                     </div>
