@@ -49,8 +49,8 @@ function BoardFabricNew() {
     const [objectCopy, setObjectCopy] = useState(null)
     useEffect(() => {
         const canvasElement = new fabric.Canvas('board')
-        // const onSocket = new WebSocket(`wss://draw-realtime-socket.herokuapp.com/${id}`)
-        const onSocket = new WebSocket(`ws://localhost:8000/${id}`)
+        const onSocket = new WebSocket(`wss://draw-realtime-socket.herokuapp.com/${id}`)
+        // const onSocket = new WebSocket(`ws://localhost:8000/${id}`)
         setCanvas(canvasElement)
         setSocket(onSocket)
     }, [id])
@@ -159,11 +159,8 @@ function BoardFabricNew() {
                         };
                         break;
                     case 'pencil':
-                        // canvas.isDrawingMode = true;
-                        // objectDrawing = canvas
-                        // objectDrawing.width = 5;
-                        // objectDrawing.color = '#00aeff';
-                        // objectDrawing._onMouseDown(message['message']['pointer'])
+                        objectDrawing = new fabric.Polyline([{ x: message['message']['pointer'].x, y: message['message']['pointer'].y }], { ...message['message']['option'], fill: 'transparent' })
+                        console.log("zzz", objectDrawing)
                         break;
                     default:
                         break;
@@ -171,10 +168,7 @@ function BoardFabricNew() {
                 if (objectDrawing) {
                     setObjectDraw(objectDrawing);
                     setOriginCoordinate(originCoordinateUpdating);
-                    if (message['message']['option'].type !== 'pencil') {
-                        canvas.add(objectDrawing);
-                    }
-
+                    canvas.add(objectDrawing);
                 }
                 break;
             case ("set-coordinate"):
@@ -210,13 +204,16 @@ function BoardFabricNew() {
                             })
                             break;
                         case 'pencil':
-                            // objectDraw['path'].push([`Q`,message['message']['pointer'].x,message['message']['pointer'].y])
-                            // canvas.isDrawingMode = true
-                            // canvas.freeDrawingBrush.color = 'red'
-                            // canvas.freeDrawingBrush.width = 5
-                            // canvas.freeDrawingBrush['_points'].push(new fabric.Point(message['message']['pointer'].x,message['message']['pointer'].y))
-                            // console.log("move", canvas)
-                            // objectDraw.onMouseMove(message['message']['pointer'])
+                            const dim = objectDraw._calcDimensions()
+                            objectDraw.points.push(new fabric.Point(message['message']['pointer'].x, message['message']['pointer'].y))
+                            objectDraw.set({
+                                left: dim.left,
+                                top: dim.top,
+                                width: dim.width,
+                                height: dim.height,
+                                dirty: true,
+                                pathOffset: new fabric.Point(dim.left + dim.width / 2, dim.top + dim.height / 2)
+                            })
                             break;
                         default:
                             break;
@@ -277,6 +274,8 @@ function BoardFabricNew() {
                         case ("rectag"):
                             objectInit = new fabric.Rect(o)
                             break;
+                        case ("pencil"):
+                            objectInit = new fabric.Polyline(o.points, o)
                         default:
                             break;
                     }
@@ -295,6 +294,7 @@ function BoardFabricNew() {
                     object.setCoords()
                 })
                 break;
+
             default:
                 break;
         }
@@ -314,11 +314,9 @@ function BoardFabricNew() {
                 handleCloseColorTable()
                 setObjectDraw(null)
                 break;
-            case ('pencil'):
-                canvas.isDrawingMode = true
-                break;
             default:
                 if (objectActives.length > 0) {
+                    // canvas.discardActiveObject()
                     setOption({ ...option, isDrawing: false, pen: "mouse" })
                     return
                 }
@@ -344,11 +342,6 @@ function BoardFabricNew() {
                 pointer: pointer
             }
         }
-        if (option.pen === 'pencil') {
-            canvas.isDrawingMode = true
-            canvas.freeDrawingBrush.color = "red"
-            canvas.freeDrawingBrush.width = 10
-        }
         if (socket && option.isDrawing) {
             socket.send(JSON.stringify(msg))
             handleDraw(msg)
@@ -357,6 +350,7 @@ function BoardFabricNew() {
 
     const handleMouseUp = () => {
         if (objectDraw) {
+            console.log(objectDraw)
             socket.send(JSON.stringify({
                 event: "add-objects-exist",
                 message: {
@@ -365,8 +359,6 @@ function BoardFabricNew() {
                 }
             }))
         }
-
-        canvas.isDrawingMode = false
         setOption({ ...option, isDrawing: false, pen: "mouse" })
     }
 
@@ -459,6 +451,17 @@ function BoardFabricNew() {
         })
     }
 
+    const handleZoom = (event) => {
+        let delta = event.e.deltaY;
+        let zoom = canvas.getZoom();
+
+        zoom *= 0.999 ** delta;
+        if (zoom > 20) zoom = 20;
+        if (zoom < 0.01) zoom = 0.01;
+        canvas.setZoom(zoom);
+        event.e.preventDefault();
+        event.e.stopPropagation();
+    }
     useEffect(() => {
         if (canvas !== null) {
             document.addEventListener('keydown', handleKeyDown)
@@ -469,6 +472,8 @@ function BoardFabricNew() {
 
             canvas.on("mouse:up", handleMouseUp)
 
+            canvas.on('mouse:wheel', handleZoom)
+
             canvas.on("object:scaling", handleScalling)
 
             canvas.on("object:rotating", handleScalling)
@@ -477,6 +482,8 @@ function BoardFabricNew() {
 
 
             return () => {
+                canvas.off('mouse:wheel', handleZoom)
+
                 canvas.off("mouse:down", handleMouseDown)
 
                 canvas.off("mouse:move", handleMouseMove)
