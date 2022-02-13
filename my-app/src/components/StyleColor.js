@@ -15,11 +15,11 @@ function StyleColor(props) {
     const listSize = [
         {
             icon: <SizeS />,
-            size: 2
+            size: 4
         },
         {
             icon: <SizeM />,
-            size: 5
+            size: 6
         },
         {
             icon: <SizeL />,

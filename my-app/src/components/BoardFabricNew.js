@@ -40,7 +40,7 @@ function BoardFabricNew() {
         pen: "mouse",
         isDrawing: false,
         color: "black",
-        strokeWidth: 2
+        strokeWidth: 4
     })
     const [displayColorTabel, setDisplayColorTable] = useState(false)
     const [objectDraw, setObjectDraw] = useState(null)
@@ -49,8 +49,8 @@ function BoardFabricNew() {
     const [objectCopy, setObjectCopy] = useState(null)
     useEffect(() => {
         const canvasElement = new fabric.Canvas('board')
-        const onSocket = new WebSocket(`wss://draw-realtime-socket.herokuapp.com/${id}`)
-        // const onSocket = new WebSocket(`ws://localhost:8000/${id}`)
+        // const onSocket = new WebSocket(`wss://draw-realtime-socket.herokuapp.com/${id}`)
+        const onSocket = new WebSocket(`ws://localhost:8000/${id}`)
         setCanvas(canvasElement)
         setSocket(onSocket)
     }, [id])
@@ -62,7 +62,6 @@ function BoardFabricNew() {
             }
             socket.onmessage = ((e) => {
                 let dataFromServer = JSON.parse(e.data)
-                console.log(dataFromServer)
                 handleDraw(dataFromServer)
             })
         }
@@ -86,6 +85,7 @@ function BoardFabricNew() {
                         type: "line",
                         stroke: option.color,
                         strokeWidth: option.strokeWidth,
+                        perPixelTargetFind: true
                     }
                 };
             case ('rectag'):
@@ -99,8 +99,10 @@ function BoardFabricNew() {
                         height: pointer.y - origin_Y,
                         stroke: option.color,
                         strokeWidth: option.strokeWidth,
-                        fill: "white",
-                        type: "rectag"
+                        fill: "",
+                        type: "rectag",
+                        perPixelTargetFind: true
+                        
                     }
                 };
             case ('cycle'):
@@ -115,8 +117,10 @@ function BoardFabricNew() {
                         originY: 'center',
                         stroke: option.color,
                         strokeWidth: option.strokeWidth,
-                        fill: "white",
-                        type: "cycle"
+                        fill: "",
+                        type: "cycle",
+                        perPixelTargetFind: true
+                        
                     }
                 };
             case ('pencil'):
@@ -126,7 +130,8 @@ function BoardFabricNew() {
                         id: uuidv4(),
                         stroke: option.color,
                         strokeWidth: option.strokeWidth,
-                        type: "pencil"
+                        type: "pencil",
+                        perPixelTargetFind: true
                     }
                 };
             default:
@@ -142,7 +147,7 @@ function BoardFabricNew() {
                 let originCoordinateUpdating
                 switch (message['message']['option'].type) {
                     case 'line':
-                        objectDrawing = new fabric.Line(message['message'].coordinate, message['message']['option']);
+                        objectDrawing = new fabric.Line(message['message'].coordinate, ...message['message']['option']);
                         break;
                     case 'rectag':
                         objectDrawing = new fabric.Rect(message['message']['option']);
@@ -160,7 +165,6 @@ function BoardFabricNew() {
                         break;
                     case 'pencil':
                         objectDrawing = new fabric.Polyline([{ x: message['message']['pointer'].x, y: message['message']['pointer'].y }], { ...message['message']['option'], fill: 'transparent' })
-                        console.log("zzz", objectDrawing)
                         break;
                     default:
                         break;
@@ -233,7 +237,6 @@ function BoardFabricNew() {
                         scaleY: message['message'].scaleY,
                         angle: message['message'].angle,
                     })
-                    canvas.setActiveObject(object)
                     object.setCoords()
                 })
                 break
@@ -266,16 +269,16 @@ function BoardFabricNew() {
                 message['object_existed'].forEach(o => {
                     switch (o.type) {
                         case ("line"):
-                            objectInit = new fabric.Line([o.x1, o.y1, o.x2, o.y2], o)
+                            objectInit = new fabric.Line([o.x1, o.y1, o.x2, o.y2], {...o , perPixelTargetFind: true})
                             break
                         case ("cycle"):
-                            objectInit = new fabric.Circle(o)
+                            objectInit = new fabric.Circle({...o , perPixelTargetFind: true})
                             break
                         case ("rectag"):
-                            objectInit = new fabric.Rect(o)
+                            objectInit = new fabric.Rect({...o,perPixelTargetFind: true})
                             break;
                         case ("pencil"):
-                            objectInit = new fabric.Polyline(o.points, o)
+                            objectInit = new fabric.Polyline(o.points, {...o , perPixelTargetFind: true})
                         default:
                             break;
                     }
@@ -305,7 +308,6 @@ function BoardFabricNew() {
     }
 
     const handleMouseDown = (event) => {
-
         const payload = make_object(event)
         const objectActives = canvas.getActiveObjects()
         let msg
@@ -316,8 +318,7 @@ function BoardFabricNew() {
                 break;
             default:
                 if (objectActives.length > 0) {
-                    // canvas.discardActiveObject()
-                    setOption({ ...option, isDrawing: false, pen: "mouse" })
+                    setOption({ ...option, isDrawing: false })
                     return
                 }
                 msg = {
@@ -330,6 +331,9 @@ function BoardFabricNew() {
             socket.send(JSON.stringify(msg))
             handleDraw(msg)
             setOption({ ...option, isDrawing: true })
+            canvas.set({
+                selection : false
+            })
         }
     }
 
@@ -345,12 +349,12 @@ function BoardFabricNew() {
         if (socket && option.isDrawing) {
             socket.send(JSON.stringify(msg))
             handleDraw(msg)
+
         }
     }
 
     const handleMouseUp = () => {
         if (objectDraw) {
-            console.log(objectDraw)
             socket.send(JSON.stringify({
                 event: "add-objects-exist",
                 message: {
@@ -359,12 +363,20 @@ function BoardFabricNew() {
                 }
             }))
         }
-        setOption({ ...option, isDrawing: false, pen: "mouse" })
+        setOption({ ...option, isDrawing: false })
+        canvas.set({
+            selection : true
+        })
+        
     }
 
     const handleScalling = () => {
         const objects_selected = canvas.getActiveObjects()
+        
         objects_selected.forEach(object => {
+            object.set({
+                perPixelTargetFind: true
+            })
             let msg = {
                 event: "modify-objects",
                 message: {
@@ -378,6 +390,7 @@ function BoardFabricNew() {
                     angle: object.angle
                 }
             }
+            
             socket.send(JSON.stringify(msg))
         })
     }
@@ -462,6 +475,16 @@ function BoardFabricNew() {
         event.e.preventDefault();
         event.e.stopPropagation();
     }
+
+    const handleSelected = (e) =>{
+        const objectActivess = canvas.getActiveObjects()
+        console.log(objectActivess)
+        objectActivess.forEach(object => {
+            object.set({
+                perPixelTargetFind: false
+            })
+        })
+    }
     useEffect(() => {
         if (canvas !== null) {
             document.addEventListener('keydown', handleKeyDown)
@@ -480,6 +503,8 @@ function BoardFabricNew() {
 
             canvas.on("object:moving", handleScalling)
 
+            canvas.on("selection:created" , handleSelected)
+
 
             return () => {
                 canvas.off('mouse:wheel', handleZoom)
@@ -495,6 +520,8 @@ function BoardFabricNew() {
                 canvas.off("object:rotating", handleScalling)
 
                 canvas.off("object:moving", handleScalling)
+
+                canvas.off("selection:created" , handleSelected)
 
                 document.removeEventListener('keydown', handleKeyDown)
 
@@ -518,7 +545,7 @@ function BoardFabricNew() {
                 <ToolBoard
                     setPen={(e) => {
                         setOption({ ...option, pen: e })
-                        canvas.discardActiveObject();
+                        // canvas.discardActiveObject();
                     }}
                     type={option.pen}
                 />
