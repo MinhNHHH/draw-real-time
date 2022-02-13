@@ -147,7 +147,7 @@ function BoardFabricNew() {
                 let originCoordinateUpdating
                 switch (message['message']['option'].type) {
                     case 'line':
-                        objectDrawing = new fabric.Line(message['message'].coordinate, ...message['message']['option']);
+                        objectDrawing = new fabric.Line(message['message'].coordinate, message['message']['option']);
                         break;
                     case 'rectag':
                         objectDrawing = new fabric.Rect(message['message']['option']);
@@ -309,7 +309,6 @@ function BoardFabricNew() {
 
     const handleMouseDown = (event) => {
         const payload = make_object(event)
-        const objectActives = canvas.getActiveObjects()
         let msg
         switch (option.pen) {
             case ('mouse'):
@@ -317,10 +316,7 @@ function BoardFabricNew() {
                 setObjectDraw(null)
                 break;
             default:
-                if (objectActives.length > 0) {
-                    setOption({ ...option, isDrawing: false })
-                    return
-                }
+                
                 msg = {
                     event: "add-objects",
                     message: payload
@@ -363,7 +359,14 @@ function BoardFabricNew() {
                 }
             }))
         }
-        setOption({ ...option, isDrawing: false })
+        switch(option.pen){
+            case "pencil":
+                setOption({...option, isDrawing : false})
+                break;
+            default:
+                setOption({...option, isDrawing : false, pen : "mouse"})
+                break;
+        }
         canvas.set({
             selection : true
         })
