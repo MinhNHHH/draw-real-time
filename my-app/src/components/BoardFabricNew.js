@@ -49,8 +49,8 @@ function BoardFabricNew() {
     const [objectCopy, setObjectCopy] = useState(null)
     useEffect(() => {
         const canvasElement = new fabric.Canvas('board')
-        // const onSocket = new WebSocket(`wss://draw-realtime-socket.herokuapp.com/${id}`)
-        const onSocket = new WebSocket(`ws://localhost:8000/${id}`)
+        const onSocket = new WebSocket(`wss://draw-realtime-socket.herokuapp.com/${id}`)
+        // const onSocket = new WebSocket(`ws://localhost:8000/${id}`)
         setCanvas(canvasElement)
         setSocket(onSocket)
     }, [id])
