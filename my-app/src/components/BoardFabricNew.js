@@ -49,8 +49,8 @@ function BoardFabricNew() {
     const [objectCopy, setObjectCopy] = useState(null)
     useEffect(() => {
         const canvasElement = new fabric.Canvas('board')
-        // const onSocket = new WebSocket(`wss://draw-realtime-socket.herokuapp.com/${id}`)
-        const onSocket = new WebSocket(`ws://localhost:8000/${id}`)
+        const onSocket = new WebSocket(`wss://draw-realtime-socket.herokuapp.com/${id}`)
+        // const onSocket = new WebSocket(`ws://localhost:8000/${id}`)
         setCanvas(canvasElement)
         setSocket(onSocket)
     }, [id])
@@ -289,7 +289,6 @@ function BoardFabricNew() {
             case ("change-attribute"):
                 const objectChange = objectInCanvas.filter(object => { return message['message'].id.indexOf(object.id) !== -1 })
                 objectChange.forEach(object => {
-                    canvas.setActiveObject(object)
                     object.set({
                         stroke: message['message'].stroke,
                         strokeWidth: parseInt(message['message'].strokeWidth)
@@ -334,6 +333,10 @@ function BoardFabricNew() {
     }
 
     const handleMouseMove = (event) => {
+        const objectsActive = canvas.getActiveObjects()
+        if (objectsActive.length > 0){
+            return
+        }
         let pointer = canvas.getPointer(event.e)
         let msg = {
             event: "set-coordinate",
@@ -359,14 +362,7 @@ function BoardFabricNew() {
                 }
             }))
         }
-        switch(option.pen){
-            case "pencil":
-                setOption({...option, isDrawing : false})
-                break;
-            default:
-                setOption({...option, isDrawing : false, pen : "mouse"})
-                break;
-        }
+        setOption({...option, isDrawing : false})
         canvas.set({
             selection : true
         })
@@ -481,7 +477,6 @@ function BoardFabricNew() {
 
     const handleSelected = (e) =>{
         const objectActivess = canvas.getActiveObjects()
-        console.log(objectActivess)
         objectActivess.forEach(object => {
             object.set({
                 perPixelTargetFind: false
