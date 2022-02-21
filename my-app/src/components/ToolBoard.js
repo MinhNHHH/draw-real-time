@@ -6,7 +6,7 @@ import { ReactComponent as Rectangle } from "../svg/rectangle.svg";
 import { ReactComponent as Cycle } from "../svg/cycle.svg";
 import { ReactComponent as Line } from "../svg/line.svg";
 
-
+ 
 import ToolBoardCheckBox from './ToolBoardCheckBox';
 export default function ToolBoard(props) {
     const [displaySubObjects, setDisplaySubObjects] = useState(false)
