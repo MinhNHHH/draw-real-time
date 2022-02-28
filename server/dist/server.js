@@ -92,7 +92,6 @@ wsServer.on('connection', (ws, request) => {
         event: "connect",
         message: room.object_draw
     }));
-    console.log("aaaaa");
     ws.on('message', (message) => {
         const msg = JSON.parse(message.toString('utf-8'));
         // handle message 
