@@ -479,7 +479,7 @@ function Board() {
     });
   };
   const handleZoom = (event: any) => {
-    let delta = event.deltaY;
+    let delta = event.e.deltaY;
     let zoom = canvas.getZoom();
     zoom *= 0.999 ** delta;
     if (zoom > 20) zoom = 20;
