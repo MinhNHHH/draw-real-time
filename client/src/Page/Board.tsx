@@ -14,6 +14,7 @@ import {
   getAbsScaleX,
   getAbsScaleY,
 } from "../components/HandleDraw/GetAbsCordinate";
+import Loading from "./Loading";
 
 declare var window: any;
 
@@ -56,10 +57,10 @@ function Board() {
   const [objectCopy, setObjectCopy] = useState<any>(null);
   const { id } = useParams();
   useEffect(() => {
-    // const onSocket = new WebSocket(
-    //   `wss://draw-realtime-socket.herokuapp.com/${id}`
-    // );
-    const onSocket = new WebSocket(`ws://localhost:8000/${id}`);
+    const onSocket = new WebSocket(
+      `wss://draw-realtime-socket.herokuapp.com/${id}`
+    );
+    // const onSocket = new WebSocket(`ws://localhost:8000/${id}`);
     setSocket(onSocket);
   }, []);
   useEffect(() => {
@@ -570,7 +571,9 @@ function Board() {
             </button>
           </div>
         </div>
-      ) : <div>Hello</div>}
+      ) : (
+        <Loading />
+      )}
     </>
   );
 }

@@ -15,6 +15,10 @@ module.exports = {
         "86%": "86%",
         "6%": "6%",
         "144px" : "144px"
+      },
+      animation: {
+        'bounce-1.25' : "bounce 1.25s infinite",
+        'bounce-1.5' : "bounce 1.5s infinite"
       }
     },
   },
