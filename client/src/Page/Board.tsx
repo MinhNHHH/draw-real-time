@@ -58,10 +58,10 @@ function Board() {
   useEffect(() => {
     const canvasElement = new window.fabric.Canvas("board");
     setCanvas(canvasElement);
-    const onSocket = new WebSocket(
-      `wss://draw-realtime-socket.herokuapp.com/${id}`
-    );
-    // const onSocket = new WebSocket(`ws://localhost:8000/${id}`);
+    // const onSocket = new WebSocket(
+    //   `wss://draw-realtime-socket.herokuapp.com/${id}`
+    // );
+    const onSocket = new WebSocket(`ws://localhost:8000/${id}`);
     setSocket(onSocket);
   }, [id]);
 
@@ -271,6 +271,22 @@ function Board() {
           object.setCoords();
         });
         break;
+        case ("objectScalling"):
+                const selectedObjects = objectInCanvas.filter(object => object.id === message['message'].id)
+                selectedObjects.forEach(object => {
+                    object.set({
+                        top: message['message'].top,
+                        left: message['message'].left,
+                        height: message['message'].height,
+                        width: message['message'].width,
+                        scaleX: message['message'].scaleX,
+                        scaleY: message['message'].scaleY,
+                        angle: message['message'].angle,
+                    })
+                    canvas.setActiveObject(object)
+                    object.setCoords()
+                })
+                break
       case "copyObjects":
         const selectedObjectsCopy = objectInCanvas.filter(
           (object: any) => object.id === message["message"].id
@@ -378,6 +394,7 @@ function Board() {
       };
       if (socket) {
         socket.send(JSON.stringify(message));
+        handleDraw(message)
       }
     });
   };
