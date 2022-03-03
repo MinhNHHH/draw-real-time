@@ -52,6 +52,7 @@ function Board() {
     height: window.innerHeight,
     width: window.innerWidth,
   });
+  const [loading, setLoading] = useState(false)
   const [objectDraw, setObjectDraw] = useState<any>(null);
   const [coordinate, setCoordinate] = useState<any>(null);
   const [objectCopy, setObjectCopy] = useState<any>(null);
@@ -71,6 +72,9 @@ function Board() {
   }, [socket]);
   useEffect(() => {
     if (socket !== null) {
+      setTimeout(() => {
+        setLoading(true)
+      }, 3000);
       setSize({
         ...size,
         height: window.innerHeight,
@@ -536,7 +540,7 @@ function Board() {
   }, [canvas, handleMouseDown]);
   return (
     <>
-      {socket !== null ? (
+      {loading ? (
         <div>
           <canvas id="board" width={size.width} height={size.height}></canvas>
           <div
