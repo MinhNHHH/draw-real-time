@@ -52,7 +52,6 @@ function Board() {
     height: window.innerHeight,
     width: window.innerWidth,
   });
-  const [loading, setLoading] = useState(false)
   const [objectDraw, setObjectDraw] = useState<any>(null);
   const [coordinate, setCoordinate] = useState<any>(null);
   const [objectCopy, setObjectCopy] = useState<any>(null);
@@ -61,7 +60,6 @@ function Board() {
     const onSocket = new WebSocket(
       `wss://draw-realtime-socket.herokuapp.com/${id}`
     );
-
     // const onSocket = new WebSocket(`ws://localhost:8000/${id}`);
     setSocket(onSocket);
   }, []);
@@ -70,12 +68,9 @@ function Board() {
       const canvasElement = new window.fabric.Canvas("board");
       setCanvas(canvasElement);
     }
-  }, [socket,loading]);
+  }, [socket]);
   useEffect(() => {
     if (socket !== null) {
-      setTimeout(() => {
-        setLoading(true)
-      }, 3000);
       setSize({
         ...size,
         height: window.innerHeight,
@@ -484,7 +479,6 @@ function Board() {
         break;
       case 54:
         setOption({ ...option, pen: "eraser" });
-        eventType = "deleteObjects";
         break;
     }
     message = {
@@ -542,7 +536,7 @@ function Board() {
   }, [canvas, handleMouseDown]);
   return (
     <>
-      {loading ? (
+      {socket !== null ? (
         <div>
           <canvas id="board" width={size.width} height={size.height}></canvas>
           <div
