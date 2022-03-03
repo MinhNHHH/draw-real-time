@@ -47,6 +47,7 @@ function Board() {
     strokeWidth: 4,
   });
   const [displayColorTabel, setDisplayColorTable] = useState(false);
+  const [isDrangging, setIsDragging] = useState(false);
   const [canvas, setCanvas] = useState<any>(null);
   const [size, setSize] = useState({
     height: window.innerHeight,
@@ -57,10 +58,10 @@ function Board() {
   const [objectCopy, setObjectCopy] = useState<any>(null);
   const { id } = useParams();
   useEffect(() => {
-    const onSocket = new WebSocket(
-      `wss://draw-realtime-socket.herokuapp.com/${id}`
-    );
-    // const onSocket = new WebSocket(`ws://localhost:8000/${id}`);
+    // const onSocket = new WebSocket(
+    //   `wss://draw-realtime-socket.herokuapp.com/${id}`
+    // );
+    const onSocket = new WebSocket(`ws://localhost:8000/${id}`);
     setSocket(onSocket);
   }, []);
   useEffect(() => {
@@ -294,21 +295,33 @@ function Board() {
         });
         break;
       case "copyObjects":
-        const selectedObjectsCopy = objectInCanvas.filter(
-          (object: any) => object.id === message["message"].id
+        const selectedObjectsCopy = objectInCanvas.filter((object: any) =>
+          message["message"].id.includes(object.id)
         );
-        setObjectCopy(selectedObjectsCopy[0]);
+        setObjectCopy(selectedObjectsCopy);
         break;
       case "pasteObjects":
-        if (objectCopy !== null) {
-          objectCopy.clone((cloneObject: any) => {
-            cloneObject.set({
-              id: uuidv4(),
-              left: cloneObject.left + 20,
-              top: cloneObject.top + 20,
+        if (objectCopy !== null && socket !== null) {
+          objectCopy.forEach((object: any) => {
+            object.clone((cloneObject: any) => {
+              cloneObject.set({
+                id: uuidv4(),
+                left: getAbsLeft(object) + 20,
+                top: getAbsTop(object) + 20,
+              });
+              canvas.add(cloneObject);
+              socket.send(
+                JSON.stringify({
+                  event: "addObjectIntoDb",
+                  message: {
+                    object: cloneObject,
+                    id: cloneObject.id,
+                  },
+                })
+              );
             });
-            canvas.add(cloneObject);
           });
+          setObjectCopy(null);
         }
         break;
       case "clearCanvas":
@@ -326,6 +339,7 @@ function Board() {
       case "mouse":
         setDisplayColorTable(false);
         setObjectDraw(null);
+
         break;
       default:
         let message = {
@@ -349,6 +363,7 @@ function Board() {
       return;
     }
     const pointer = canvas.getPointer(e);
+
     let message = {
       event: "setCoordinateObject",
       message: {
@@ -480,6 +495,18 @@ function Board() {
       case 54:
         setOption({ ...option, pen: "eraser" });
         break;
+      case 32:
+        break;
+    }
+    if ((e.ctrlKey || e.metaKey) && id !== null) {
+      switch (e.keyCode) {
+        case 86:
+          eventType = "pasteObjects";
+          break;
+        case 67:
+          eventType = "copyObjects";
+          break;
+      }
     }
     message = {
       event: eventType,
