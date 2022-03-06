@@ -36,23 +36,20 @@ class Room {
                 }
                 break;
             case "objectScalling":
-                const objectUpdate = this.object_draw.find((o) => o.id === message["message"].id);
-                update_dic(objectUpdate, message["message"]);
+                const objectUpdate = this.object_draw.find((o) => o.id === message["message"]['option'].id);
+                update_dic(objectUpdate, message["message"]['option']);
                 break;
             case "clearCanvas":
                 this.object_draw.length = 0;
                 break;
             case "deleteObjects":
                 this.object_draw = this.object_draw.filter((object) => {
-                    return message["message"].id.indexOf(object.id) === -1;
+                    return message["message"]['option'].id.indexOf(object.id) === -1;
                 });
                 break;
-            case "paste-objects":
-                console.log(message["message"]);
-                break;
             case "changeAttribute":
-                const objectChangeAttribute = this.object_draw.find((o) => o.id === message["message"].id);
-                update_dic(objectChangeAttribute, message["message"]);
+                const objectChangeAttribute = this.object_draw.find((o) => o.id === message["message"]['option'].id);
+                update_dic(objectChangeAttribute, message["message"]['option']);
                 break;
         }
     }

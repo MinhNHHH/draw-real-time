@@ -1,12 +1,11 @@
-import React, { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
+import { v4 as uuidv4 } from "uuid";
 
 import StyleColor from "../components/Tool/StyleColor";
 import ToolBoard from "../components/Tool/ToolBoard";
-
+import Loading from "./Loading";
 import { ReactComponent as Delete } from "../icon/delete.svg";
-
-import { v4 as uuidv4 } from "uuid";
 
 import {
   getAbsLeft,
@@ -14,30 +13,18 @@ import {
   getAbsScaleX,
   getAbsScaleY,
 } from "../components/HandleDraw/GetAbsCordinate";
-import Loading from "./Loading";
+import { handleDraw } from "../components/HandleDraw/HanleDraw";
+
+import { messageCreateObject } from "../Type/TypeMessage";
+import {
+  eventMouse,
+  eventWheel,
+  eventKeyBoard,
+  eventInput,
+} from "../Type/TypeEvent";
 
 declare var window: any;
 
-type event = React.ChangeEvent<HTMLInputElement>;
-type messageCreateObject = {
-  pointer: { x: number; y: number };
-  option: {
-    id: string;
-    stroke: string;
-    strokeWidth: number;
-    fill: "";
-    type?: string;
-    perPixelTargetFind: boolean;
-    left?: number;
-    top?: number;
-    width?: number;
-    height?: number;
-  };
-};
-type messageHandleDraw = {
-  event: string;
-  message?: any;
-};
 function Board() {
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const [option, setOption] = useState({
@@ -45,23 +32,18 @@ function Board() {
     isDrawing: false,
     color: "black",
     strokeWidth: 4,
+    isDrangging: false,
   });
   const [displayColorTabel, setDisplayColorTable] = useState(false);
-  const [isDrangging, setIsDragging] = useState(false);
   const [canvas, setCanvas] = useState<any>(null);
-  const [size, setSize] = useState({
-    height: window.innerHeight,
-    width: window.innerWidth,
-  });
-  const [objectDraw, setObjectDraw] = useState<any>(null);
-  const [coordinate, setCoordinate] = useState<any>(null);
-  const [objectCopy, setObjectCopy] = useState<any>(null);
+  const [objectDraw, setObjectDraws] = useState<any>(null);
+  const [coordinate, setCoordinates] = useState<any>(null);
+  const [objectCopy, setObjectCopys] = useState<any>(null);
   const { id } = useParams();
   useEffect(() => {
-    // const onSocket = new WebSocket(
-    //   `wss://draw-realtime-socket.herokuapp.com/${id}`
-    // );
-    const onSocket = new WebSocket(`ws://localhost:8000/${id}`);
+    const onSocket = new WebSocket(
+      `wss://draw-realtime-socket.herokuapp.com/${id}`
+    );
     setSocket(onSocket);
   }, []);
   useEffect(() => {
@@ -72,24 +54,29 @@ function Board() {
   }, [socket]);
   useEffect(() => {
     if (socket !== null) {
-      setSize({
-        ...size,
-        height: window.innerHeight,
-        width: window.innerWidth,
-      });
       socket.onopen = () => {
         console.log("WebSocket open");
       };
       socket.onmessage = (e) => {
         let dataFromServer = JSON.parse(e.data);
-        handleDraw(dataFromServer);
+        handleDraw(
+          dataFromServer,
+          canvas,
+          socket,
+          setObjectDraws,
+          setCoordinates,
+          setObjectCopys,
+          objectDraw,
+          coordinate,
+          objectCopy
+        );
       };
     }
   }, [canvas, objectDraw, coordinate]);
   const handleDisplayColorTable = () => {
     setDisplayColorTable(true);
   };
-  const createObject = (event: event) => {
+  const createObject = (event: eventMouse) => {
     let pointer = canvas.getPointer(event);
     let message: messageCreateObject = {
       pointer: pointer,
@@ -108,238 +95,20 @@ function Board() {
     };
     return message;
   };
-  const handleDraw = (message: messageHandleDraw) => {
-    const objectInCanvas = canvas.getObjects();
-    switch (message.event) {
-      case "connect":
-        let objectInit: any;
-        message["message"].forEach((o: any) => {
-          switch (o.type) {
-            case "line":
-              objectInit = new window.fabric.Line([o.x1, o.y1, o.x2, o.y2], {
-                ...o,
-                perPixelTargetFind: true,
-              });
-              break;
-            case "cycle":
-              objectInit = new window.fabric.Ellipse({
-                ...o,
-                perPixelTargetFind: true,
-              });
-              break;
-            case "rectag":
-              objectInit = new window.fabric.Rect({
-                ...o,
-                perPixelTargetFind: true,
-              });
-              break;
-            case "pencil":
-              objectInit = new window.fabric.Polyline(o.points, {
-                ...o,
-                perPixelTargetFind: true,
-              });
-          }
-          canvas.add(objectInit);
-          objectInit.setCoords();
-        });
-        break;
-      case "createObject":
-        let objectDrawing;
-        switch (message["message"]["option"].type) {
-          case "line":
-            objectDrawing = new window.fabric.Line(
-              [
-                message["message"]["pointer"].x,
-                message["message"]["pointer"].y,
-                message["message"]["pointer"].x,
-                message["message"]["pointer"].y,
-              ],
-              message["message"]["option"]
-            );
-            break;
-          case "rectag":
-            objectDrawing = new window.fabric.Rect(
-              message["message"]["option"]
-            );
-            break;
-          case "cycle":
-            objectDrawing = new window.fabric.Ellipse(
-              message["message"]["option"]
-            );
-            break;
-          case "pencil":
-            objectDrawing = new window.fabric.Polyline(
-              [
-                {
-                  x: message["message"]["pointer"].x,
-                  y: message["message"]["pointer"].y,
-                },
-              ],
-              { ...message["message"]["option"], fill: "transparent" }
-            );
-            break;
-        }
-        if (objectDrawing) {
-          setObjectDraw(objectDrawing);
-          setCoordinate(message["message"]["pointer"]);
-          canvas.add(objectDrawing);
-        }
-        break;
-      case "setCoordinateObject":
-        if (objectDraw) {
-          switch (message["message"].type) {
-            case "line":
-              objectDraw.set({
-                x2: message["message"]["pointer"].x,
-                y2: message["message"]["pointer"].y,
-              });
-              break;
-            case "rectag":
-              if (coordinate.x > message["message"]["pointer"].x) {
-                objectDraw.set({
-                  left: Math.abs(message["message"]["pointer"].x),
-                });
-              }
-              if (coordinate.y > message["message"]["pointer"].y) {
-                objectDraw.set({
-                  top: Math.abs(message["message"]["pointer"].y),
-                });
-              }
-              objectDraw.set({
-                width: Math.abs(coordinate.x - message["message"]["pointer"].x),
-              });
-              objectDraw.set({
-                height: Math.abs(
-                  coordinate.y - message["message"]["pointer"].y
-                ),
-              });
-              break;
-            case "cycle":
-              if (coordinate.x > message["message"]["pointer"].x) {
-                objectDraw.set({
-                  left: Math.abs(message["message"]["pointer"].x),
-                });
-              }
-              if (coordinate.y > message["message"]["pointer"].y) {
-                objectDraw.set({
-                  top: Math.abs(message["message"]["pointer"].y),
-                });
-              }
-              objectDraw.set({
-                rx:
-                  Math.abs(coordinate.x - message["message"]["pointer"].x) / 2,
-              });
-              objectDraw.set({
-                ry:
-                  Math.abs(coordinate.y - message["message"]["pointer"].y) / 2,
-              });
-              break;
-            case "pencil":
-              const dim = objectDraw._calcDimensions();
-              objectDraw.points.push(
-                new window.fabric.Point(
-                  message["message"]["pointer"].x,
-                  message["message"]["pointer"].y
-                )
-              );
-              objectDraw.set({
-                left: dim.left,
-                top: dim.top,
-                width: dim.width,
-                height: dim.height,
-                dirty: true,
-                pathOffset: new window.fabric.Point(
-                  dim.left + dim.width / 2,
-                  dim.top + dim.height / 2
-                ),
-              });
-              break;
-          }
-        }
-        break;
-      case "deleteObjects":
-        const objectDelete = objectInCanvas.filter((object: any) => {
-          return message["message"].id.indexOf(object.id) !== -1;
-        });
-        canvas.discardActiveObject();
-        canvas.remove(...objectDelete);
-        break;
-      case "changeAttribute":
-        const objectChange = objectInCanvas.filter((object: any) => {
-          return message["message"].id.indexOf(object.id) !== -1;
-        });
-        objectChange.forEach((object: any) => {
-          object.set({
-            stroke: message["message"].stroke,
-            strokeWidth: parseInt(message["message"].strokeWidth),
-          });
-          object.setCoords();
-        });
-        break;
-      case "objectScalling":
-        const selectedObjects = objectInCanvas.filter(
-          (object: any) => object.id === message["message"].id
-        );
-        selectedObjects.forEach((object: any) => {
-          object.set({
-            top: message["message"].top,
-            left: message["message"].left,
-            height: message["message"].height,
-            width: message["message"].width,
-            scaleX: message["message"].scaleX,
-            scaleY: message["message"].scaleY,
-            angle: message["message"].angle,
-          });
-          canvas.setActiveObject(object);
-          object.setCoords();
-        });
-        break;
-      case "copyObjects":
-        const selectedObjectsCopy = objectInCanvas.filter((object: any) =>
-          message["message"].id.includes(object.id)
-        );
-        setObjectCopy(selectedObjectsCopy);
-        break;
-      case "pasteObjects":
-        if (objectCopy !== null && socket !== null) {
-          objectCopy.forEach((object: any) => {
-            object.clone((cloneObject: any) => {
-              cloneObject.set({
-                id: uuidv4(),
-                left: getAbsLeft(object) + 20,
-                top: getAbsTop(object) + 20,
-              });
-              canvas.add(cloneObject);
-              socket.send(
-                JSON.stringify({
-                  event: "addObjectIntoDb",
-                  message: {
-                    object: cloneObject,
-                    id: cloneObject.id,
-                  },
-                })
-              );
-            });
-          });
-          setObjectCopy(null);
-        }
-        break;
-      case "clearCanvas":
-        canvas.clear();
-        break;
-    }
-    if (objectDraw) {
-      objectDraw.setCoords();
-    }
-    canvas.renderAll();
-  };
-  const handleMouseDown = (e: event) => {
+
+  const handleMouseDown = (e: eventMouse) => {
     const object = createObject(e);
     switch (option.pen) {
       case "mouse":
         setDisplayColorTable(false);
-        setObjectDraw(null);
-
+        setObjectDraws(null);
+        if (e.e.altKey === true) {
+          setOption({ ...option, isDrangging: true });
+          canvas.set({
+            selection: false,
+          });
+          setCoordinates(canvas.getPointer(e));
+        }
         break;
       default:
         let message = {
@@ -348,7 +117,17 @@ function Board() {
         };
         if (socket) {
           socket.send(JSON.stringify(message));
-          handleDraw(message);
+          handleDraw(
+            message,
+            canvas,
+            socket,
+            setObjectDraws,
+            setCoordinates,
+            setObjectCopys,
+            objectDraw,
+            coordinate,
+            objectCopy
+          );
           setOption({ ...option, isDrawing: true });
           canvas.set({
             selection: false,
@@ -357,26 +136,43 @@ function Board() {
         break;
     }
   };
-  const handleMouseMove = (e: event) => {
+  const handleMouseMove = (e: eventMouse) => {
     const objectActives = canvas.getActiveObjects();
     if (objectActives.length > 0) {
       return;
     }
     const pointer = canvas.getPointer(e);
-
+    if (option.isDrangging) {
+      const vpt = canvas.viewportTransform;
+      vpt[4] += pointer.x - coordinate.x;
+      vpt[5] += pointer.y - coordinate.y;
+      canvas.renderAll();
+    }
     let message = {
       event: "setCoordinateObject",
       message: {
         pointer: pointer,
-        type: option.pen,
+        option: {
+          type: option.pen,
+        },
       },
     };
     if (socket && option.isDrawing) {
-      handleDraw(message);
+      handleDraw(
+        message,
+        canvas,
+        socket,
+        setObjectDraws,
+        setCoordinates,
+        setObjectCopys,
+        objectDraw,
+        coordinate,
+        objectCopy
+      );
       socket.send(JSON.stringify(message));
     }
   };
-  const handleMouseUp = (e: event) => {
+  const handleMouseUp = (e: eventMouse) => {
     if (objectDraw && socket) {
       socket.send(
         JSON.stringify({
@@ -388,13 +184,17 @@ function Board() {
         })
       );
     }
-    canvas.isDrawingMode = false;
-    setOption({ ...option, isDrawing: false, pen: "mouse" });
-    canvas.set({
-      selection: true,
+    setCoordinates(canvas.getPointer(e));
+    canvas.setViewportTransform(canvas.viewportTransform);
+    setOption({
+      ...option,
+      isDrawing: false,
+      pen: "mouse",
+      isDrangging: false,
     });
+    canvas.set({ selection: true });
   };
-  const handleScalling = (e: event) => {
+  const handleScalling = (e: eventMouse) => {
     const objectSelected = canvas.getActiveObjects();
     objectSelected.forEach((object: any) => {
       object.set({
@@ -403,23 +203,35 @@ function Board() {
       let message = {
         event: "objectScalling",
         message: {
-          id: object.id,
-          top: getAbsTop(object),
-          left: getAbsLeft(object),
-          height: object.height,
-          width: object.width,
-          scaleX: getAbsScaleX(object),
-          scaleY: getAbsScaleY(object),
-          angle: object.angle,
+          option: {
+            id: object.id,
+            top: getAbsTop(object),
+            left: getAbsLeft(object),
+            height: object.height,
+            width: object.width,
+            scaleX: getAbsScaleX(object),
+            scaleY: getAbsScaleY(object),
+            angle: object.angle,
+          },
         },
       };
       if (socket) {
         socket.send(JSON.stringify(message));
-        handleDraw(message);
+        handleDraw(
+          message,
+          canvas,
+          socket,
+          setObjectDraws,
+          setCoordinates,
+          setObjectCopys,
+          objectDraw,
+          coordinate,
+          objectCopy
+        );
       }
     });
   };
-  const handleChangeAttribute = (e: any) => {
+  const handleChangeAttribute = (e: eventInput) => {
     const objectChanged = canvas.getActiveObjects();
     let strokeWidth: string;
     let stroke: string;
@@ -436,15 +248,27 @@ function Board() {
       let message = {
         event: "changeAttribute",
         message: {
-          id: object.id,
-          strokeWidth: !parseInt(strokeWidth)
-            ? option.strokeWidth
-            : parseInt(strokeWidth),
-          stroke: !stroke ? option.color : stroke,
+          option: {
+            id: object.id,
+            strokeWidth: !parseInt(strokeWidth)
+              ? option.strokeWidth
+              : parseInt(strokeWidth),
+            stroke: !stroke ? option.color : stroke,
+          },
         },
       };
       if (socket) {
-        handleDraw(message);
+        handleDraw(
+          message,
+          canvas,
+          socket,
+          setObjectDraws,
+          setCoordinates,
+          setObjectCopys,
+          objectDraw,
+          coordinate,
+          objectCopy
+        );
         socket.send(JSON.stringify(message));
       }
     });
@@ -452,20 +276,24 @@ function Board() {
   const handleClear = () => {
     let message = { event: "clearCanvas" };
     if (socket) {
-      handleDraw(message);
+      handleDraw(
+        message,
+        canvas,
+        socket,
+        setObjectDraws,
+        setCoordinates,
+        setObjectCopys,
+        objectDraw,
+        coordinate,
+        objectCopy
+      );
       socket.send(JSON.stringify(message));
     }
   };
   const hanleCoppyLink = () => {
     navigator.clipboard.writeText(window.location.href);
   };
-  const handleKeyDown = (e: KeyboardEvent) => {
-    let message: {
-      event: string;
-      message: {
-        id: [string];
-      };
-    };
+  const handleKeyDown = (e: eventKeyBoard) => {
     let eventType: any;
     const objectsSelected = canvas.getActiveObjects();
     const id = !objectsSelected
@@ -477,25 +305,24 @@ function Board() {
       case 8: // Backspace
         eventType = "deleteObjects";
         break;
-      case 49:
+      case 49: // 1
         setOption({ ...option, pen: "mouse" });
         break;
-      case 50:
+      case 50: // 2
         setOption({ ...option, pen: "pencil" });
         break;
-      case 51:
+      case 51: // 3
         setOption({ ...option, pen: "rectag" });
         break;
-      case 52:
+      case 52: // 4
         setOption({ ...option, pen: "cycle" });
         break;
-      case 53:
+      case 53: // 5
         setOption({ ...option, pen: "line" });
         break;
-      case 54:
+      case 54: // 6
         setOption({ ...option, pen: "eraser" });
-        break;
-      case 32:
+        eventType = "deleteObjects";
         break;
     }
     if ((e.ctrlKey || e.metaKey) && id !== null) {
@@ -508,14 +335,26 @@ function Board() {
           break;
       }
     }
-    message = {
+    let message = {
       event: eventType,
       message: {
-        id: id,
+        option: {
+          id: id,
+        },
       },
     };
     if (socket) {
-      handleDraw(message);
+      handleDraw(
+        message,
+        canvas,
+        socket,
+        setObjectDraws,
+        setCoordinates,
+        setObjectCopys,
+        objectDraw,
+        coordinate,
+        objectCopy
+      );
       socket.send(JSON.stringify(message));
     }
   };
@@ -527,7 +366,7 @@ function Board() {
       });
     });
   };
-  const handleZoom = (event: any) => {
+  const handleZoom = (event: eventWheel) => {
     let delta = event.e.deltaY;
     let zoom = canvas.getZoom();
     zoom *= 0.999 ** delta;
@@ -537,8 +376,18 @@ function Board() {
     event.e.preventDefault();
     event.e.stopPropagation();
   };
+  const handleReSize = () => {
+    if (canvas.width != window.innerWidth) {
+      canvas.setWidth(window.innerWidth);
+      canvas.setHeight(window.innerHeight);
+      canvas.renderAll();
+      canvas.calcOffset();
+
+    }
+  };
   useEffect(() => {
     if (canvas !== null) {
+      window.addEventListener("resize", handleReSize);
       document.addEventListener("keydown", handleKeyDown);
       canvas.on("mouse:down", handleMouseDown);
       canvas.on("mouse:move", handleMouseMove);
@@ -550,6 +399,7 @@ function Board() {
       canvas.on("mouse:wheel", handleZoom);
       return () => {
         document.removeEventListener("keydown", handleKeyDown);
+        window.removeEventListener("resize", handleReSize);
         canvas.off("mouse:down", handleMouseDown);
         canvas.off("mouse:move", handleMouseMove);
         canvas.off("mouse:up", handleMouseUp);
@@ -565,7 +415,7 @@ function Board() {
     <>
       {socket !== null ? (
         <div>
-          <canvas id="board" width={size.width} height={size.height}></canvas>
+          <canvas id="board" width={window.innerWidth} height={window.innerHeight}></canvas>
           <div
             onClick={hanleCoppyLink}
             className="hover:bg-blue-300 absolute h-24 w-36 border-2 rounded-tr-full rounded-bl-full top-12"

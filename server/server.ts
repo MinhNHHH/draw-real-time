@@ -22,7 +22,7 @@ interface Room {
 
 interface message {
   event: string;
-  message: { object: any; id: string };
+  message: any;
 }
 
 class Room {
@@ -53,23 +53,23 @@ class Room {
         break;
       case "objectScalling":
         const objectUpdate = this.object_draw.find(
-          (o) => o.id === message["message"].id
+          (o) => o.id === message["message"]['option'].id
         );
-        update_dic(objectUpdate, message["message"]);
+        update_dic(objectUpdate, message["message"]['option']);
         break;
       case "clearCanvas":
         this.object_draw.length = 0;
         break;
       case "deleteObjects":
         this.object_draw = this.object_draw.filter((object) => {
-          return message["message"].id.indexOf(object.id) === -1;
+          return message["message"]['option'].id.indexOf(object.id) === -1;
         });
         break;
       case "changeAttribute":
         const objectChangeAttribute = this.object_draw.find(
-          (o) => o.id === message["message"].id
+          (o) => o.id === message["message"]['option'].id
         );
-        update_dic(objectChangeAttribute, message["message"]);
+        update_dic(objectChangeAttribute, message["message"]['option']);
         break;
     }
   }
