@@ -39,6 +39,7 @@ function Board() {
   const [objectDraw, setObjectDraws] = useState<any>(null);
   const [coordinate, setCoordinates] = useState<any>(null);
   const [objectCopy, setObjectCopys] = useState<any>(null);
+  const [editing, setEditing] = useState(false);
   const { id } = useParams();
   useEffect(() => {
     // const onSocket = new WebSocket(
@@ -111,6 +112,7 @@ function Board() {
           });
           setCoordinates(canvas.getPointer(e));
         }
+        setEditing(false)
         break;
       default:
         let message = {
@@ -146,6 +148,8 @@ function Board() {
     const pointer = canvas.getPointer(e);
     if (option.isDrangging) {
       const vpt = canvas.viewportTransform;
+      console.log(vpt)
+      vpt[0] = 1
       vpt[4] += pointer.x - coordinate.x;
       vpt[5] += pointer.y - coordinate.y;
       canvas.renderAll();
@@ -292,41 +296,43 @@ function Board() {
       : objectsSelected.map((object: any) => {
           return object.id;
         });
-    switch (e.keyCode) {
-      case 8: // Backspace
-        eventType = "deleteObjects";
-        break;
-      case 49: // 1
-        setOption({ ...option, pen: "mouse" });
-        break;
-      case 50: // 2
-        setOption({ ...option, pen: "pencil" });
-        break;
-      case 51: // 3
-        setOption({ ...option, pen: "rectag" });
-        break;
-      case 52: // 4
-        setOption({ ...option, pen: "cycle" });
-        break;
-      case 53: // 5
-        setOption({ ...option, pen: "line" });
-        break;
-      case 54: // 6
-        setOption({ ...option, pen: "eraser" });
-        eventType = "deleteObjects";
-        break;
-      case 55: // 6
-        setOption({ ...option, pen: "text" });
-        break;
-    }
-    if ((e.ctrlKey || e.metaKey) && id !== null) {
+    if(!editing){
       switch (e.keyCode) {
-        case 86:
-          eventType = "pasteObjects";
+        case 8: // Backspace
+          eventType = "deleteObjects";
           break;
-        case 67:
-          eventType = "copyObjects";
+        case 49: // 1
+          setOption({ ...option, pen: "mouse" });
           break;
+        case 50: // 2
+          setOption({ ...option, pen: "pencil" });
+          break;
+        case 51: // 3
+          setOption({ ...option, pen: "rectag" });
+          break;
+        case 52: // 4
+          setOption({ ...option, pen: "cycle" });
+          break;
+        case 53: // 5
+          setOption({ ...option, pen: "line" });
+          break;
+        case 54: // 6
+          setOption({ ...option, pen: "eraser" });
+          eventType = "deleteObjects";
+          break;
+        case 55: // 6
+          setOption({ ...option, pen: "text" });
+          break;
+      }
+      if ((e.ctrlKey || e.metaKey) && id !== null) {
+        switch (e.keyCode) {
+          case 86:
+            eventType = "pasteObjects";
+            break;
+          case 67:
+            eventType = "copyObjects";
+            break;
+        }
       }
     }
     let message = {
@@ -362,11 +368,11 @@ function Board() {
   };
   const handleZoom = (event: eventWheel) => {
     let delta = event.e.deltaY;
-    let zoom = canvas.getZoom();
+    let zoom = canvas.getZoom(1);
     zoom *= 0.999 ** delta;
-    if (zoom > 20) zoom = 20;
+    if (zoom > 20) zoom = 1;
     if (zoom < 0.01) zoom = 0.01;
-    canvas.setZoom(zoom);
+    canvas.zoomToPoint({ x: event.e.offsetX, y: event.e.offsetY }, zoom);
     event.e.preventDefault();
     event.e.stopPropagation();
   };
@@ -383,7 +389,7 @@ function Board() {
     console.log(e);
   };
   const handleTextEdit = (e: any) => {
-    console.log(e);
+    setEditing(true)
     const textChanging = canvas.getActiveObject();
     let message = {
       event: "textChange",
@@ -398,6 +404,7 @@ function Board() {
       socket.send(JSON.stringify(message));
     }
   };
+
   useEffect(() => {
     if (canvas !== null) {
       window.addEventListener("resize", handleReSize);
@@ -435,6 +442,7 @@ function Board() {
             id="board"
             width={window.innerWidth}
             height={window.innerHeight}
+            className = "border-2"
           ></canvas>
           <div
             onClick={hanleCoppyLink}
