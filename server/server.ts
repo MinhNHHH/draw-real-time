@@ -53,23 +53,29 @@ class Room {
         break;
       case "objectScalling":
         const objectUpdate = this.object_draw.find(
-          (o) => o.id === message["message"]['option'].id
+          (o) => o.id === message["message"]["option"].id
         );
-        update_dic(objectUpdate, message["message"]['option']);
+        update_dic(objectUpdate, message["message"]["option"]);
         break;
       case "clearCanvas":
         this.object_draw.length = 0;
         break;
       case "deleteObjects":
         this.object_draw = this.object_draw.filter((object) => {
-          return message["message"]['option'].id.indexOf(object.id) === -1;
+          return message["message"]["option"].id.indexOf(object.id) === -1;
         });
         break;
       case "changeAttribute":
         const objectChangeAttribute = this.object_draw.find(
-          (o) => o.id === message["message"]['option'].id
+          (o) => o.id === message["message"]["option"].id
         );
-        update_dic(objectChangeAttribute, message["message"]['option']);
+        update_dic(objectChangeAttribute, message["message"]["option"]);
+        break;
+      case "textChange":
+        const objectChangingText = this.object_draw.find(
+          (o) => o.id === message["message"]["option"].id
+        );
+        update_dic(objectChangingText, message["message"]["option"]);
         break;
     }
   }
@@ -116,7 +122,7 @@ wsServer.on("connection", (ws: WebSocket, request) => {
     room.handleMessage(msg);
     // send message to client.
     room.boardcastException(msg, ws);
-    console.log("room", room);
+    // console.log("room", room);
   });
   ws.on("close", () => {
     room.handleDeleteConnection(ws);

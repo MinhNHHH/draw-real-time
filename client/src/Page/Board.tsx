@@ -41,9 +41,10 @@ function Board() {
   const [objectCopy, setObjectCopys] = useState<any>(null);
   const { id } = useParams();
   useEffect(() => {
-    const onSocket = new WebSocket(
-      `wss://draw-realtime-socket.herokuapp.com/${id}`
-    );
+    // const onSocket = new WebSocket(
+    //   `wss://draw-realtime-socket.herokuapp.com/${id}`
+    // );
+    const onSocket = new WebSocket(`ws://localhost:8000/${id}`);
     setSocket(onSocket);
   }, []);
   useEffect(() => {
@@ -59,6 +60,7 @@ function Board() {
       };
       socket.onmessage = (e) => {
         let dataFromServer = JSON.parse(e.data);
+        console.log(dataFromServer);
         handleDraw(
           dataFromServer,
           canvas,
@@ -72,7 +74,7 @@ function Board() {
         );
       };
     }
-  }, [canvas, objectDraw, coordinate]);
+  }, [canvas, objectDraw, coordinate, objectCopy]);
   const handleDisplayColorTable = () => {
     setDisplayColorTable(true);
   };
@@ -194,7 +196,7 @@ function Board() {
     });
     canvas.set({ selection: true });
   };
-  const handleScalling = (e: eventMouse) => {
+  const handleScalling = () => {
     const objectSelected = canvas.getActiveObjects();
     objectSelected.forEach((object: any) => {
       object.set({
@@ -217,17 +219,6 @@ function Board() {
       };
       if (socket) {
         socket.send(JSON.stringify(message));
-        handleDraw(
-          message,
-          canvas,
-          socket,
-          setObjectDraws,
-          setCoordinates,
-          setObjectCopys,
-          objectDraw,
-          coordinate,
-          objectCopy
-        );
       }
     });
   };
@@ -324,6 +315,9 @@ function Board() {
         setOption({ ...option, pen: "eraser" });
         eventType = "deleteObjects";
         break;
+      case 55: // 6
+        setOption({ ...option, pen: "text" });
+        break;
     }
     if ((e.ctrlKey || e.metaKey) && id !== null) {
       switch (e.keyCode) {
@@ -382,7 +376,26 @@ function Board() {
       canvas.setHeight(window.innerHeight);
       canvas.renderAll();
       canvas.calcOffset();
+    }
+  };
 
+  const objectAdded = (e: any) => {
+    console.log(e);
+  };
+  const handleTextEdit = (e: any) => {
+    console.log(e);
+    const textChanging = canvas.getActiveObject();
+    let message = {
+      event: "textChange",
+      message: {
+        option: {
+          id: textChanging.id,
+          text: e.target.text,
+        },
+      },
+    };
+    if (socket) {
+      socket.send(JSON.stringify(message));
     }
   };
   useEffect(() => {
@@ -397,7 +410,9 @@ function Board() {
       canvas.on("object:moving", handleScalling);
       canvas.on("selection:created", handleSelected);
       canvas.on("mouse:wheel", handleZoom);
+      canvas.on("text:changed", handleTextEdit);
       return () => {
+        canvas.off("object:added", objectAdded);
         document.removeEventListener("keydown", handleKeyDown);
         window.removeEventListener("resize", handleReSize);
         canvas.off("mouse:down", handleMouseDown);
@@ -408,6 +423,7 @@ function Board() {
         canvas.off("object:moving", handleScalling);
         canvas.off("selection:created", handleSelected);
         canvas.off("mouse:wheel", handleZoom);
+        canvas.off("text:changed", handleTextEdit);
       };
     }
   }, [canvas, handleMouseDown]);
@@ -415,7 +431,11 @@ function Board() {
     <>
       {socket !== null ? (
         <div>
-          <canvas id="board" width={window.innerWidth} height={window.innerHeight}></canvas>
+          <canvas
+            id="board"
+            width={window.innerWidth}
+            height={window.innerHeight}
+          ></canvas>
           <div
             onClick={hanleCoppyLink}
             className="hover:bg-blue-300 absolute h-24 w-36 border-2 rounded-tr-full rounded-bl-full top-12"

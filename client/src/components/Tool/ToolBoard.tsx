@@ -5,6 +5,7 @@ import { ReactComponent as Eraser } from "../../icon/eraser.svg";
 import { ReactComponent as Rectangle } from "../../icon/rectangle.svg";
 import { ReactComponent as Cycle } from "../../icon/cycle.svg";
 import { ReactComponent as Line } from "../../icon/line.svg";
+import { ReactComponent as Text } from "../../icon/text.svg";
 import ToolBoardCheckBox from "./ToolBoardCheckBox";
 
 interface ParamTypeToolBoard {
@@ -31,6 +32,10 @@ export default function ToolBoard(props: ParamTypeToolBoard) {
     {
       type: "eraser",
       icon: <Eraser />,
+    },
+    {
+      type: "text",
+      icon: <Text />
     },
   ]);
 
@@ -66,7 +71,7 @@ export default function ToolBoard(props: ParamTypeToolBoard) {
   useEffect(() => {
     const newList = updateListOption(tempListOption, subOption);
     setListOptions(newList);
-  }, [displaySubObjects,props.type]);
+  }, [displaySubObjects, props.type]);
 
   const displayOption = listOptions.map((item) => {
     return (

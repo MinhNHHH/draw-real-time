@@ -46,6 +46,13 @@ const handleDraw = (
               ...o,
               perPixelTargetFind: true,
             });
+            break;
+          case "text":
+            objectInit = new window.fabric.IText(o.text, {
+              ...o,
+              perPixelTargetFind: true,
+            });
+            break;
         }
         canvas.add(objectInit);
         objectInit.setCoords();
@@ -84,11 +91,35 @@ const handleDraw = (
             { ...message["message"]["option"], fill: "transparent" }
           );
           break;
+        case "text":
+          objectDrawing = new window.fabric.IText("", {
+            ...message["message"]["option"],
+            fontWeight: "normal",
+            fontSize: 32,
+          });
       }
       if (objectDrawing) {
         setObjectDraw(objectDrawing);
         setCoordinate(message["message"]["pointer"]);
+        if (objectDrawing.type === "text") {
+          canvas.add(objectDrawing).setActiveObject(objectDrawing);
+          objectDrawing.enterEditing();
+          return;
+        }
         canvas.add(objectDrawing);
+      }
+      break;
+    case "textChange":
+      if (objectDraw) {
+        const textChanging = objectInCanvas.filter((object: any) => {
+          return message["message"]["option"].id.indexOf(object.id) !== -1;
+        });
+        textChanging.forEach((o: any) => {
+          o.set({
+            text: message["message"]["option"].text,
+          });
+        });
+        canvas.discardActiveObject();
       }
       break;
     case "setCoordinateObject":
