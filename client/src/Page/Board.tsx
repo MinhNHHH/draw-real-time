@@ -186,6 +186,9 @@ function Board() {
           },
         })
       );
+      if (objectDraw.type === "text") {
+        objectDraw.enterEditing();
+      }
     }
     setCoordinates(canvas.getPointer(e));
     canvas.setViewportTransform(canvas.viewportTransform);

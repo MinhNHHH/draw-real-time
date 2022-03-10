@@ -103,8 +103,6 @@ const handleDraw = (
         setCoordinate(message["message"]["pointer"]);
         if (objectDrawing.type === "text") {
           canvas.add(objectDrawing).setActiveObject(objectDrawing);
-          objectDrawing.enterEditing();
-          return;
         }
         canvas.add(objectDrawing);
       }
