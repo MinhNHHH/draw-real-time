@@ -112,7 +112,7 @@ function Board() {
           });
           setCoordinates(canvas.getPointer(e));
         }
-        setEditing(false)
+        setEditing(false);
         break;
       default:
         let message = {
@@ -148,8 +148,6 @@ function Board() {
     const pointer = canvas.getPointer(e);
     if (option.isDrangging) {
       const vpt = canvas.viewportTransform;
-      console.log(vpt)
-      vpt[0] = 1
       vpt[4] += pointer.x - coordinate.x;
       vpt[5] += pointer.y - coordinate.y;
       canvas.renderAll();
@@ -296,7 +294,7 @@ function Board() {
       : objectsSelected.map((object: any) => {
           return object.id;
         });
-    if(!editing){
+    if (!editing) {
       switch (e.keyCode) {
         case 8: // Backspace
           eventType = "deleteObjects";
@@ -368,9 +366,9 @@ function Board() {
   };
   const handleZoom = (event: eventWheel) => {
     let delta = event.e.deltaY;
-    let zoom = canvas.getZoom(1);
+    let zoom = canvas.getZoom();
     zoom *= 0.999 ** delta;
-    if (zoom > 20) zoom = 1;
+    if (zoom > 20) zoom = 20;
     if (zoom < 0.01) zoom = 0.01;
     canvas.zoomToPoint({ x: event.e.offsetX, y: event.e.offsetY }, zoom);
     event.e.preventDefault();
@@ -389,7 +387,7 @@ function Board() {
     console.log(e);
   };
   const handleTextEdit = (e: any) => {
-    setEditing(true)
+    setEditing(true);
     const textChanging = canvas.getActiveObject();
     let message = {
       event: "textChange",
@@ -442,7 +440,6 @@ function Board() {
             id="board"
             width={window.innerWidth}
             height={window.innerHeight}
-            className = "border-2"
           ></canvas>
           <div
             onClick={hanleCoppyLink}
