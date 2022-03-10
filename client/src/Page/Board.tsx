@@ -368,10 +368,10 @@ function Board() {
   };
   const handleZoom = (event: eventWheel) => {
     let delta = event.e.deltaY;
-    let zoom = canvas.getZoom();
+    let zoom = canvas.getZoom(1);
     zoom *= 0.999 ** delta;
-    if (zoom > 20) zoom = 20;
-    if (zoom < 0.01) zoom = 0.01;
+    if (zoom > 10) zoom = 10;
+    if (zoom < 0.5) zoom = 0.5;
     canvas.zoomToPoint({ x: event.e.offsetX, y: event.e.offsetY }, zoom);
     event.e.preventDefault();
     event.e.stopPropagation();

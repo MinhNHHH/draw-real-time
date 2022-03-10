@@ -95,6 +95,7 @@ const handleDraw = (
           objectDrawing = new window.fabric.IText("", {
             ...message["message"]["option"],
             fontWeight: "normal",
+            strokeWidth: 1,
             fontSize: 32,
           });
       }
@@ -103,6 +104,7 @@ const handleDraw = (
         setCoordinate(message["message"]["pointer"]);
         if (objectDrawing.type === "text") {
           canvas.add(objectDrawing).setActiveObject(objectDrawing);
+          return;
         }
         canvas.add(objectDrawing);
       }
@@ -200,10 +202,18 @@ const handleDraw = (
         return message["message"]["option"].id.indexOf(object.id) !== -1;
       });
       objectChange.forEach((object: any) => {
-        object.set({
-          stroke: message["message"]["option"].stroke,
-          strokeWidth: parseInt(message["message"]["option"].strokeWidth),
-        });
+        if (object.type === "text") {
+          object.set({
+            stroke: message["message"]["option"].stroke,
+            fontSize: parseInt(message["message"]["option"].strokeWidth) * 10,
+            strokeWidth : 1
+          });
+        } else {
+          object.set({
+            stroke: message["message"]["option"].stroke,
+            strokeWidth: parseInt(message["message"]["option"].strokeWidth),
+          });
+        }
         object.setCoords();
       });
       break;
