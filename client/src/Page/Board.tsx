@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {  useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
 
@@ -41,18 +41,21 @@ function Board() {
   const [objectCopy, setObjectCopys] = useState<any>(null);
   const [editing, setEditing] = useState(false);
   const { id } = useParams();
+  
   useEffect(() => {
     const onSocket = new WebSocket(
       `wss://draw-realtime-socket.herokuapp.com/${id}`
     );
     setSocket(onSocket);
   }, []);
+
   useEffect(() => {
     if (socket) {
       const canvasElement = new window.fabric.Canvas("board");
       setCanvas(canvasElement);
     }
   }, [socket]);
+
   useEffect(() => {
     if (socket !== null) {
       socket.onopen = () => {
@@ -61,23 +64,15 @@ function Board() {
       socket.onmessage = (e) => {
         let dataFromServer = JSON.parse(e.data);
         console.log(dataFromServer);
-        handleDraw(
-          dataFromServer,
-          canvas,
-          socket,
-          setObjectDraws,
-          setCoordinates,
-          setObjectCopys,
-          objectDraw,
-          coordinate,
-          objectCopy
-        );
+        handleDraw(dataFromServer,canvas,socket,setObjectDraws,setCoordinates,setObjectCopys,objectDraw,coordinate,objectCopy);
       };
     }
   }, [canvas, objectDraw, coordinate, objectCopy]);
+
   const handleDisplayColorTable = () => {
     setDisplayColorTable(true);
   };
+  // Create object draw ("rectangle, cycle, line ,...")
   const createObject = (event: eventMouse) => {
     let pointer = canvas.getPointer(event);
     let message: messageCreateObject = {
@@ -97,13 +92,15 @@ function Board() {
     };
     return message;
   };
-
+  
+  // HandleMouseDown event 
   const handleMouseDown = (e: eventMouse) => {
     const object = createObject(e);
     switch (option.pen) {
       case "mouse":
         setDisplayColorTable(false);
         setObjectDraws(null);
+        // Use Pan
         if (e.e.altKey === true) {
           setOption({ ...option, isDrangging: true });
           canvas.set({
@@ -111,6 +108,7 @@ function Board() {
           });
           setCoordinates(canvas.getPointer(e));
         }
+        // disable keydown
         setEditing(false);
         break;
       default:
@@ -120,17 +118,7 @@ function Board() {
         };
         if (socket) {
           socket.send(JSON.stringify(message));
-          handleDraw(
-            message,
-            canvas,
-            socket,
-            setObjectDraws,
-            setCoordinates,
-            setObjectCopys,
-            objectDraw,
-            coordinate,
-            objectCopy
-          );
+          handleDraw(message,canvas,socket,setObjectDraws,setCoordinates,setObjectCopys,objectDraw,coordinate,objectCopy);
           setOption({ ...option, isDrawing: true });
           canvas.set({
             selection: false,
@@ -145,6 +133,7 @@ function Board() {
       return;
     }
     const pointer = canvas.getPointer(e);
+    // Set coordinate for viewportTransforms. (Pan)
     if (option.isDrangging) {
       const vpt = canvas.viewportTransform;
       vpt[4] += pointer.x - coordinate.x;
@@ -161,21 +150,12 @@ function Board() {
       },
     };
     if (socket && option.isDrawing) {
-      handleDraw(
-        message,
-        canvas,
-        socket,
-        setObjectDraws,
-        setCoordinates,
-        setObjectCopys,
-        objectDraw,
-        coordinate,
-        objectCopy
-      );
+      handleDraw(message,canvas,socket,setObjectDraws,setCoordinates,setObjectCopys,objectDraw,coordinate,objectCopy);
       socket.send(JSON.stringify(message));
     }
   };
   const handleMouseUp = (e: eventMouse) => {
+    // Add object into db on server
     if (objectDraw && socket) {
       socket.send(
         JSON.stringify({
@@ -186,10 +166,12 @@ function Board() {
           },
         })
       );
+      // Set editing when create object text.
       if (objectDraw.type === "text") {
         objectDraw.enterEditing();
       }
     }
+    // Set value to default
     setCoordinates(canvas.getPointer(e));
     canvas.setViewportTransform(canvas.viewportTransform);
     setOption({
@@ -200,6 +182,7 @@ function Board() {
     });
     canvas.set({ selection: true });
   };
+  // Scalling event.
   const handleScalling = () => {
     const objectSelected = canvas.getActiveObjects();
     objectSelected.forEach((object: any) => {
@@ -226,6 +209,7 @@ function Board() {
       }
     });
   };
+  // Change color and strokeWidth
   const handleChangeAttribute = (e: eventInput) => {
     const objectChanged = canvas.getActiveObjects();
     let strokeWidth: string;
@@ -253,41 +237,24 @@ function Board() {
         },
       };
       if (socket) {
-        handleDraw(
-          message,
-          canvas,
-          socket,
-          setObjectDraws,
-          setCoordinates,
-          setObjectCopys,
-          objectDraw,
-          coordinate,
-          objectCopy
-        );
+        handleDraw(message,canvas,socket,setObjectDraws,setCoordinates,setObjectCopys,objectDraw,coordinate,objectCopy);
         socket.send(JSON.stringify(message));
       }
     });
   };
+
   const handleClear = () => {
     let message = { event: "clearCanvas" };
     if (socket) {
-      handleDraw(
-        message,
-        canvas,
-        socket,
-        setObjectDraws,
-        setCoordinates,
-        setObjectCopys,
-        objectDraw,
-        coordinate,
-        objectCopy
-      );
+      handleDraw(message,canvas,socket,setObjectDraws,setCoordinates,setObjectCopys,objectDraw,coordinate,objectCopy);
       socket.send(JSON.stringify(message));
     }
   };
+
   const hanleCoppyLink = () => {
     navigator.clipboard.writeText(window.location.href);
   };
+  
   const handleKeyDown = (e: eventKeyBoard) => {
     let eventType: any;
     const objectsSelected = canvas.getActiveObjects();
@@ -296,6 +263,7 @@ function Board() {
       : objectsSelected.map((object: any) => {
           return object.id;
         });
+    // When Text object active disable keydown.
     if (!editing) {
       switch (e.keyCode) {
         case 8: // Backspace
@@ -326,10 +294,10 @@ function Board() {
       }
       if ((e.ctrlKey || e.metaKey) && id !== null) {
         switch (e.keyCode) {
-          case 86:
+          case 86: // V
             eventType = "pasteObjects";
             break;
-          case 67:
+          case 67: // C
             eventType = "copyObjects";
             break;
         }
@@ -344,20 +312,11 @@ function Board() {
       },
     };
     if (socket) {
-      handleDraw(
-        message,
-        canvas,
-        socket,
-        setObjectDraws,
-        setCoordinates,
-        setObjectCopys,
-        objectDraw,
-        coordinate,
-        objectCopy
-      );
+      handleDraw(message,canvas,socket,setObjectDraws,setCoordinates,setObjectCopys,objectDraw,coordinate,objectCopy);
       socket.send(JSON.stringify(message));
     }
   };
+  // Disable selected when create objects.
   const handleSelected = () => {
     const objectsSelecteds = canvas.getActiveObjects();
     objectsSelecteds.forEach((object: any) => {
@@ -366,10 +325,12 @@ function Board() {
       });
     });
   };
+
   const handleZoom = (event: eventWheel) => {
     let delta = event.e.deltaY;
     let zoom = canvas.getZoom(1);
     zoom *= 0.999 ** delta;
+    // check zoom (10X , 0.5X)
     if (zoom > 10) zoom = 10;
     if (zoom < 0.5) zoom = 0.5;
     canvas.zoomToPoint({ x: event.e.offsetX, y: event.e.offsetY }, zoom);
@@ -377,16 +338,13 @@ function Board() {
     event.e.stopPropagation();
   };
   const handleReSize = () => {
+    // Resize canvas.
     if (canvas.width != window.innerWidth) {
       canvas.setWidth(window.innerWidth);
       canvas.setHeight(window.innerHeight);
       canvas.renderAll();
       canvas.calcOffset();
     }
-  };
-
-  const objectAdded = (e: any) => {
-    console.log(e);
   };
   const handleTextEdit = (e: any) => {
     setEditing(true);
@@ -404,7 +362,6 @@ function Board() {
       socket.send(JSON.stringify(message));
     }
   };
-
   useEffect(() => {
     if (canvas !== null) {
       window.addEventListener("resize", handleReSize);
@@ -419,7 +376,6 @@ function Board() {
       canvas.on("mouse:wheel", handleZoom);
       canvas.on("text:changed", handleTextEdit);
       return () => {
-        canvas.off("object:added", objectAdded);
         document.removeEventListener("keydown", handleKeyDown);
         window.removeEventListener("resize", handleReSize);
         canvas.off("mouse:down", handleMouseDown);
