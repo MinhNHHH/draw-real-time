@@ -12,7 +12,7 @@
 - Clone the project: `https://github.com/hoangminh981/draw-real-time`
 - Cd to client: `./client`
 - Build package : `npm install`.
-
+# Start project
 ## How does it work?
 Web Draw Real Time uses *sessions*, which connect users together.
 All users in a session work on the same canvas.
