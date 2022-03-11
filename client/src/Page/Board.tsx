@@ -43,10 +43,10 @@ function Board() {
   const { id } = useParams();
   
   useEffect(() => {
-    const onSocket = new WebSocket(
-      `wss://draw-realtime-socket.herokuapp.com/${id}`
-    );
-    // const onSocket = new WebSocket(`ws://localhost:8000/${id}`)
+    // const onSocket = new WebSocket(
+    //   `wss://draw-realtime-socket.herokuapp.com/${id}`
+    // );
+    const onSocket = new WebSocket(`ws://localhost:8000/${id}`)
     setSocket(onSocket);
   }, []);
 

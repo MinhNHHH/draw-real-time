@@ -4,7 +4,7 @@ type messageCreateObject = {
     id: string;
     stroke?: string;
     strokeWidth?: number;
-    fill: "";
+    fill?: "";
     type?: string;
     perPixelTargetFind: boolean;
     left?: number;

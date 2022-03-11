@@ -96,7 +96,8 @@ const handleDraw = (
             ...message["message"]["option"],
             fontWeight: "normal",
             strokeWidth: 1,
-            fontSize: 32,
+            fontSize: parseInt(message["message"]["option"].strokeWidth) * 10,
+            fill : "black"
           });
       }
       if (objectDrawing) {
