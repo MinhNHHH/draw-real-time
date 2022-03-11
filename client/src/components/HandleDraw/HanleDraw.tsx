@@ -231,7 +231,6 @@ const handleDraw = (
           scaleY: message["message"]["option"].scaleY,
           angle: message["message"]["option"].angle,
         });
-        canvas.setActiveObject(object);
         object.setCoords();
       });
       break;
