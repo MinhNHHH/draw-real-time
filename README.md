@@ -35,7 +35,7 @@ A session's password can be changed or removed at any time.
 - Zoom Tool
 
 ## How does it *really* work?
-Web Draw uses WebSockets for the "Web" part, and the web Canvas API for the "Draw" part.
+Web Draw Real Time uses WebSockets for the "Web" part, and the web Canvas API for the "Draw" part.
 
 The WebSockets server uses the [ws module] for Node.js.When a user performs an action, the server is told about it, and if necessary, then tells all other session members about it.
 
