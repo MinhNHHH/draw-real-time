@@ -51,7 +51,7 @@ const handleDraw = (
             break;
         }
         canvas.add(objectInit);
-        objectInit.setCoords();
+        // objectInit.setCoords();
       });
       break;
     case "createObject":
@@ -97,10 +97,6 @@ const handleDraw = (
           });
       }
       if (objectDrawing) {
-        if (objectDrawing.type === "text") {
-          canvas.add(objectDrawing).setActiveObject(objectDrawing);
-          return;
-        }
         canvas.add(objectDrawing);
       }
       break;

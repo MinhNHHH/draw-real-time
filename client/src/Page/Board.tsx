@@ -170,6 +170,7 @@ function Board() {
       }
       // Set textEditing when create object text.
       if (objectAddDb.type === "text") {
+        canvas.setActiveObject(objectAddDb)
         objectAddDb.enterEditing();
       }
       setIdObject(null);
