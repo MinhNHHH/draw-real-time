@@ -107,7 +107,6 @@ const handleDraw = (
       textChanging.set({
         text: message["message"]["option"].text,
       });
-      // canvas.discardActiveObject();
       break;
     case "setCoordinateObject":
       const objectDraw = objectInCanvas.find((object: any) => {
