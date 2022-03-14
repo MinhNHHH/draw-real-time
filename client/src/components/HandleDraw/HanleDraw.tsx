@@ -10,11 +10,7 @@ const handleDraw = (
   message: messageHandleDraw,
   canvas: any,
   socket: WebSocket,
-  setObjectDraw: React.Dispatch<any>,
-  setCoordinate: React.Dispatch<any>,
   setObjectCopy: React.Dispatch<any>,
-  objectDraw: any,
-  coordinate: any,
   objectCopy: any
 ) => {
   const objectInCanvas = canvas.getObjects();
@@ -97,12 +93,10 @@ const handleDraw = (
             fontWeight: "normal",
             strokeWidth: 1,
             fontSize: parseInt(message["message"]["option"].strokeWidth) * 10,
-            fill : "black"
+            fill: "black",
           });
       }
       if (objectDrawing) {
-        setObjectDraw(objectDrawing);
-        setCoordinate(message["message"]["pointer"]);
         if (objectDrawing.type === "text") {
           canvas.add(objectDrawing).setActiveObject(objectDrawing);
           return;
@@ -111,19 +105,18 @@ const handleDraw = (
       }
       break;
     case "textChange":
-      if (objectDraw) {
-        const textChanging = objectInCanvas.filter((object: any) => {
-          return message["message"]["option"].id.indexOf(object.id) !== -1;
-        });
-        textChanging.forEach((o: any) => {
-          o.set({
-            text: message["message"]["option"].text,
-          });
-        });
-        canvas.discardActiveObject();
-      }
+      const textChanging = objectInCanvas.find((object: any) => {
+        return message["message"]["option"].id.indexOf(object.id) !== -1;
+      });
+      textChanging.set({
+        text: message["message"]["option"].text,
+      });
+      canvas.discardActiveObject();
       break;
     case "setCoordinateObject":
+      const objectDraw = objectInCanvas.find((object: any) => {
+        return object.id === message["message"]["option"].id;
+      });
       if (objectDraw) {
         switch (message["message"]["option"].type) {
           case "line":
@@ -133,39 +126,43 @@ const handleDraw = (
             });
             break;
           case "rectag":
-            if (coordinate.x > message["message"]["pointer"].x) {
+            if (parseInt(objectDraw.left) > message["message"]["pointer"].x) {
               objectDraw.set({
                 left: Math.abs(message["message"]["pointer"].x),
               });
             }
-            if (coordinate.y > message["message"]["pointer"].y) {
+            if (parseInt(objectDraw.top) > message["message"]["pointer"].y) {
               objectDraw.set({
                 top: Math.abs(message["message"]["pointer"].y),
               });
             }
             objectDraw.set({
-              width: Math.abs(coordinate.x - message["message"]["pointer"].x),
+              width: Math.abs(
+                parseInt(objectDraw.left) - message["message"]["pointer"].x
+              ),
             });
             objectDraw.set({
-              height: Math.abs(coordinate.y - message["message"]["pointer"].y),
+              height: Math.abs(
+                parseInt(objectDraw.top) - message["message"]["pointer"].y
+              ),
             });
             break;
           case "cycle":
-            if (coordinate.x > message["message"]["pointer"].x) {
+            if (parseInt(objectDraw.left) > message["message"]["pointer"].x) {
               objectDraw.set({
                 left: Math.abs(message["message"]["pointer"].x),
               });
             }
-            if (coordinate.y > message["message"]["pointer"].y) {
+            if (parseInt(objectDraw.top) > message["message"]["pointer"].y) {
               objectDraw.set({
                 top: Math.abs(message["message"]["pointer"].y),
               });
             }
             objectDraw.set({
-              rx: Math.abs(coordinate.x - message["message"]["pointer"].x) / 2,
+              rx: Math.abs(parseInt(objectDraw.left) - message["message"]["pointer"].x) / 2,
             });
             objectDraw.set({
-              ry: Math.abs(coordinate.y - message["message"]["pointer"].y) / 2,
+              ry: Math.abs(parseInt(objectDraw.top) - message["message"]["pointer"].y) / 2,
             });
             break;
           case "pencil":
@@ -207,7 +204,7 @@ const handleDraw = (
           object.set({
             stroke: message["message"]["option"].stroke,
             fontSize: parseInt(message["message"]["option"].strokeWidth) * 10,
-            strokeWidth : 1
+            strokeWidth: 1,
           });
         } else {
           object.set({
@@ -269,10 +266,6 @@ const handleDraw = (
       canvas.clear();
       break;
   }
-  if (objectDraw) {
-    objectDraw.setCoords();
-  }
-
   canvas.renderAll();
 };
 

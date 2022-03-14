@@ -78,13 +78,16 @@ wsServer.on("connection", (ws, request) => {
         room = new Room(request.url);
         list_room.push(room);
     }
+    console.log(ws.readyState);
     // If room existed add another connection
     room.addConnection(ws);
     // send message to client when first connect
-    ws.send(JSON.stringify({
-        event: "connect",
-        message: room.object_draw,
-    }));
+    if (ws.readyState === ws_1.WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+            event: "connect",
+            message: room.object_draw,
+        }));
+    }
     ws.on("message", (message) => {
         const msg = JSON.parse(message.toString("utf-8"));
         // handle message

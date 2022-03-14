@@ -101,20 +101,22 @@ class Room {
 wsServer.on("connection", (ws: WebSocket, request) => {
   // check room existed and create room and add connection
   let room: Room = list_room.find((r) => r.room_id === request.url);
-
   if (!room) {
     room = new Room(request.url);
     list_room.push(room);
   }
+  console.log(ws.readyState)
   // If room existed add another connection
   room.addConnection(ws);
   // send message to client when first connect
-  ws.send(
-    JSON.stringify({
-      event: "connect",
-      message: room.object_draw,
-    })
-  );
+  if (ws.readyState === WebSocket.OPEN){
+    ws.send(
+      JSON.stringify({
+        event: "connect",
+        message: room.object_draw,
+      })
+    );
+  }
 
   ws.on("message", (message: Buffer) => {
     const msg = JSON.parse(message.toString("utf-8"));

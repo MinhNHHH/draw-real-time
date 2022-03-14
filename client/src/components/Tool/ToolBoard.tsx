@@ -10,7 +10,7 @@ import ToolBoardCheckBox from "./ToolBoardCheckBox";
 
 interface ParamTypeToolBoard {
   type: string;
-  setPen: React.Dispatch<React.SetStateAction<any>>;
+  setPen: (value : string) => void;
 }
 type listObject = Array<{ type: string; icon: JSX.Element }>;
 
