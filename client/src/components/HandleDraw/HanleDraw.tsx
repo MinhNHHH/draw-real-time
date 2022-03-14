@@ -51,7 +51,6 @@ const handleDraw = (
             break;
         }
         canvas.add(objectInit);
-        // objectInit.setCoords();
       });
       break;
     case "createObject":
@@ -95,6 +94,7 @@ const handleDraw = (
             fontSize: parseInt(message["message"]["option"].strokeWidth) * 10,
             fill: "black",
           });
+          break;
       }
       if (objectDrawing) {
         canvas.add(objectDrawing);

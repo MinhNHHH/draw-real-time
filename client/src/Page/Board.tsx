@@ -170,7 +170,7 @@ function Board() {
       }
       // Set textEditing when create object text.
       if (objectAddDb.type === "text") {
-        canvas.setActiveObject(objectAddDb)
+        canvas.setActiveObject(objectAddDb);
         objectAddDb.enterEditing();
       }
       setIdObject(null);
@@ -291,7 +291,6 @@ function Board() {
           break;
         case 54: // 6
           setOption({ ...option, pen: "eraser" });
-          eventType = "deleteObjects";
           break;
         case 55: // 6
           setOption({ ...option, pen: "text" });
@@ -344,7 +343,10 @@ function Board() {
   };
   const handleReSize = () => {
     // Resize canvas.
-    if (canvas.width != window.innerWidth) {
+    if (
+      canvas.width != window.innerWidth ||
+      canvas.height != window.innerHeight
+    ) {
       canvas.setWidth(window.innerWidth);
       canvas.setHeight(window.innerHeight);
       canvas.renderAll();
