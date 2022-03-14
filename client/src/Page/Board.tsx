@@ -111,6 +111,7 @@ function Board() {
           message: object,
         };
         setIdObject(object["option"].id);
+        setCoordinates(object['pointer'])
         if (socket) {
           socket.send(JSON.stringify(message));
           handleDraw(message, canvas, socket, setObjectCopys, objectCopy);
@@ -138,7 +139,8 @@ function Board() {
     let message = {
       event: "setCoordinateObject",
       message: {
-        pointer: pointer,
+        pointerNew: pointer,
+        pointerOrigin: coordinate,
         option: {
           type: option.pen,
           id: idObject,
@@ -174,6 +176,7 @@ function Board() {
         objectAddDb.enterEditing();
       }
       setIdObject(null);
+      setCoordinates(null)
     }
     // Set value to default
     setCoordinates(canvas.getPointer(e));
@@ -343,12 +346,18 @@ function Board() {
   };
   const handleReSize = () => {
     // Resize canvas.
-    if (
-      canvas.width != window.innerWidth ||
-      canvas.height != window.innerHeight
-    ) {
-      canvas.setWidth(window.innerWidth);
-      canvas.setHeight(window.innerHeight);
+    if (canvas.width != window.innerWidth) {
+      let scaleMultiplier = window.innerWidth / canvas.width;
+
+      const objects = canvas.getObjects();
+      objects.forEach((object: any) => {
+        object.scaleX = object.scaleX * scaleMultiplier;
+        object.scaleY = object.scaleY * scaleMultiplier;
+        object.left = object.left * scaleMultiplier;
+        object.top = object.top * scaleMultiplier;
+      });
+      canvas.setWidth(canvas.getWidth() * scaleMultiplier);
+      canvas.setHeight(canvas.getHeight() * scaleMultiplier);
       canvas.renderAll();
       canvas.calcOffset();
     }
@@ -399,46 +408,43 @@ function Board() {
   }, [canvas, handleMouseDown, handleKeyDown]);
   return (
     <>
-      <div>
-        {connect === false && <Loading />}
-        <canvas
-          id="board"
-          width={window.innerWidth}
-          height={window.innerHeight}
-        ></canvas>
-        <div
-          onClick={hanleCoppyLink}
-          className="hover:bg-blue-300 absolute h-24 w-36 border-2 rounded-tr-full rounded-bl-full top-12"
-        >
-          <div className="text-ellipsis overflow-hidden w-16 relative top-8 left-10 whitespace-nowrap">
-            Room {id}
-          </div>
-        </div>
-        <div className="fixed right-0 top-0">
-          <StyleColor
-            setAttribute={handleChangeAttribute}
-            color={option.color}
-            strokeWidth={option.strokeWidth}
-            displayColorTabel={option.displayColorTabel}
-            handleDisplayColorTable={handleDisplayColorTable}
-          />
-        </div>
-        <div className="fixed flex justify-center bottom-3 w-full">
-          <ToolBoard
-            setPen={(valueOption: string) => {
-              setOption({ ...option, pen: valueOption });
-            }}
-            type={option.pen}
-          />
-          <button
-            className="transform hover:bg-#e5e7eb rounded-xl  relative m-0 p-3 flex align-middle justify-center border-2 border-white transition duration-300 hover:scale-125"
-            onClick={handleClear}
-          >
-            <Delete />
-          </button>
+      {connect === false && <Loading />}
+      <canvas
+        id="board"
+        width={window.innerWidth}
+        height={window.innerHeight}
+      ></canvas>
+      <div
+        onClick={hanleCoppyLink}
+        className="hover:bg-blue-300 absolute h-24 w-36 border-2 rounded-tr-full rounded-bl-full top-12"
+      >
+        <div className="text-ellipsis overflow-hidden w-16 relative top-8 left-10 whitespace-nowrap">
+          Room {id}
         </div>
       </div>
-      )
+      <div className="fixed right-0 top-0">
+        <StyleColor
+          setAttribute={handleChangeAttribute}
+          color={option.color}
+          strokeWidth={option.strokeWidth}
+          displayColorTabel={option.displayColorTabel}
+          handleDisplayColorTable={handleDisplayColorTable}
+        />
+      </div>
+      <div className="fixed flex justify-center bottom-3 w-full">
+        <ToolBoard
+          setPen={(valueOption: string) => {
+            setOption({ ...option, pen: valueOption });
+          }}
+          type={option.pen}
+        />
+        <button
+          className="transform hover:bg-#e5e7eb rounded-xl  relative m-0 p-3 flex align-middle justify-center border-2 border-white transition duration-300 hover:scale-125"
+          onClick={handleClear}
+        >
+          <Delete />
+        </button>
+      </div>
     </>
   );
 }

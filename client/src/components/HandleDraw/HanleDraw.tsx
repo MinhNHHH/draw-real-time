@@ -116,56 +116,78 @@ const handleDraw = (
         switch (message["message"]["option"].type) {
           case "line":
             objectDraw.set({
-              x2: message["message"]["pointer"].x,
-              y2: message["message"]["pointer"].y,
+              x2: message["message"]["pointerNew"].x,
+              y2: message["message"]["pointerNew"].y,
             });
             break;
           case "rectag":
-            if (parseInt(objectDraw.left) > message["message"]["pointer"].x) {
+            if (
+              message["message"]["pointerOrigin"].x >
+              message["message"]["pointerNew"].x
+            ) {
               objectDraw.set({
-                left: Math.abs(message["message"]["pointer"].x),
+                left: Math.abs(message["message"]["pointerNew"].x),
               });
             }
-            if (parseInt(objectDraw.top) > message["message"]["pointer"].y) {
+            if (
+              message["message"]["pointerOrigin"].y >
+              message["message"]["pointerNew"].y
+            ) {
               objectDraw.set({
-                top: Math.abs(message["message"]["pointer"].y),
+                top: Math.abs(message["message"]["pointerNew"].y),
               });
             }
             objectDraw.set({
               width: Math.abs(
-                parseInt(objectDraw.left) - message["message"]["pointer"].x
+                message["message"]["pointerOrigin"].x -
+                  message["message"]["pointerNew"].x
               ),
             });
             objectDraw.set({
               height: Math.abs(
-                parseInt(objectDraw.top) - message["message"]["pointer"].y
+                message["message"]["pointerOrigin"].y -
+                  message["message"]["pointerNew"].y
               ),
             });
             break;
           case "cycle":
-            if (parseInt(objectDraw.left) > message["message"]["pointer"].x) {
+            if (
+              message["message"]["pointerOrigin"].x >
+              message["message"]["pointerNew"].x
+            ) {
               objectDraw.set({
-                left: Math.abs(message["message"]["pointer"].x),
+                left: Math.abs(message["message"]["pointerNew"].x),
               });
             }
-            if (parseInt(objectDraw.top) > message["message"]["pointer"].y) {
+            if (
+              message["message"]["pointerOrigin"].y >
+              message["message"]["pointerNew"].y
+            ) {
               objectDraw.set({
-                top: Math.abs(message["message"]["pointer"].y),
+                top: Math.abs(message["message"]["pointerNew"].y),
               });
             }
             objectDraw.set({
-              rx: Math.abs(parseInt(objectDraw.left) - message["message"]["pointer"].x) / 2,
+              rx:
+                Math.abs(
+                  message["message"]["pointerOrigin"].x -
+                    message["message"]["pointerNew"].x
+                ) / 2,
             });
             objectDraw.set({
-              ry: Math.abs(parseInt(objectDraw.top) - message["message"]["pointer"].y) / 2,
+              ry:
+                Math.abs(
+                  message["message"]["pointerOrigin"].y -
+                    message["message"]["pointerNew"].y
+                ) / 2,
             });
             break;
           case "pencil":
             const dim = objectDraw._calcDimensions();
             objectDraw.points.push(
               new window.fabric.Point(
-                message["message"]["pointer"].x,
-                message["message"]["pointer"].y
+                message["message"]["pointerNew"].x,
+                message["message"]["pointerNew"].y
               )
             );
             objectDraw.set({
