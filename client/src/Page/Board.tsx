@@ -101,6 +101,7 @@ function Board() {
             selection: false,
           });
           setCoordinates(canvas.getPointer(e));
+          return
         }
         // disable keydown
         setOption({ ...option, textEditing: true });
