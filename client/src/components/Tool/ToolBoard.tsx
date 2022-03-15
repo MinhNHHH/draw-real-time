@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { ReactComponent as Mouse } from "../../icon/mouse.svg";
 import { ReactComponent as Pencil } from "../../icon/pencil.svg";
-import { ReactComponent as Eraser } from "../../icon/eraser.svg";
 import { ReactComponent as Rectangle } from "../../icon/rectangle.svg";
 import { ReactComponent as Cycle } from "../../icon/cycle.svg";
 import { ReactComponent as Line } from "../../icon/line.svg";
@@ -28,10 +27,6 @@ export default function ToolBoard(props: ParamTypeToolBoard) {
     {
       type: "rectag",
       icon: <Rectangle />,
-    },
-    {
-      type: "eraser",
-      icon: <Eraser />,
     },
     {
       type: "text",

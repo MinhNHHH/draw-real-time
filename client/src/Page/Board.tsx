@@ -101,7 +101,7 @@ function Board() {
             selection: false,
           });
           setCoordinates(canvas.getPointer(e));
-          return
+          return;
         }
         // disable keydown
         setOption({ ...option, textEditing: true });
@@ -112,7 +112,7 @@ function Board() {
           message: object,
         };
         setIdObject(object["option"].id);
-        setCoordinates(object['pointer'])
+        setCoordinates(object["pointer"]);
         if (socket) {
           socket.send(JSON.stringify(message));
           handleDraw(message, canvas, socket, setObjectCopys, objectCopy);
@@ -177,7 +177,7 @@ function Board() {
         objectAddDb.enterEditing();
       }
       setIdObject(null);
-      setCoordinates(null)
+      setCoordinates(null);
     }
     // Set value to default
     setCoordinates(canvas.getPointer(e));
@@ -294,9 +294,6 @@ function Board() {
           setOption({ ...option, pen: "line" });
           break;
         case 54: // 6
-          setOption({ ...option, pen: "eraser" });
-          break;
-        case 55: // 6
           setOption({ ...option, pen: "text" });
           break;
       }
