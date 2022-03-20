@@ -3,6 +3,8 @@
 </h1>
 <a href="https://drawrt.vercel.app/"><p align="center"><img style="border-radius:20px;" src="./client/public/index.png"/></p></a>
 
+![Draw](./client/public/demo_draw.gif)
+
 # Objective
 - A little real-time online collaborative drawing program. <https://drawrt.vercel.app>
 - Web Draw Real Time is a web app that allows users to draw on a shared canvas in real time.
