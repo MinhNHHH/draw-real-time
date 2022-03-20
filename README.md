@@ -3,7 +3,7 @@
 </h1>
 <a href="https://drawrt.vercel.app/"><p align="center"><img style="border-radius:20px;" src="./client/public/index.png"/></p></a>
 
-![Draw](./client/public/demo_draw.gif)
+![Draw](./client/public/demo.gif)
 
 # Objective
 - A little real-time online collaborative drawing program. <https://drawrt.vercel.app>
@@ -27,14 +27,15 @@ Sessions can also optionally have a password set on them, so that only users who
 A session's password can be changed or removed at any time.
 
 ## Currently available tools
-- Pen Tool
+- Select `Keypress 1`
+- Pen Tool `Keypress 2`
+- Rectangle Tool `Keypress 3`
+- Ellipse Tool `Keypress 4`
+- Line Tool `Keypress 5`
+- Text Editing `Keypress 6`
+- Pan Tool `Alt/Option`
+- Zoom Tool `Scroll`
 - Colour Picker Tool
-- Line Tool
-- Rectangle Tool
-- Ellipse Tool
-- Text Editing
-- Pan Tool
-- Zoom Tool
 
 ## How does it *really* work?
 Web Draw Real Time uses WebSockets for the "Web" part, and the web Canvas API for the "Draw" part.
