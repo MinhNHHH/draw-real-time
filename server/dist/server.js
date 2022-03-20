@@ -17,6 +17,7 @@ class Room {
         this.room_id = room_id;
         this.connections = [];
         this.object_draw = [];
+        this.temporary_object = [];
     }
     addConnection(connection) {
         if (!this.connections.includes(connection)) {
@@ -55,6 +56,16 @@ class Room {
                 const objectChangingText = this.object_draw.find((o) => o.id === message["message"]["option"].id);
                 update_dic(objectChangingText, message["message"]["option"]);
                 break;
+            case "unDo":
+                if (this.object_draw.length > 0) {
+                    this.temporary_object.push(this.object_draw.pop());
+                }
+                break;
+            case "reDo":
+                if (this.temporary_object.length > 0) {
+                    this.object_draw.push(this.temporary_object.pop());
+                }
+                break;
         }
     }
     boardcastException(msg, connection) {
@@ -91,6 +102,7 @@ wsServer.on("connection", (ws, request) => {
     ws.on("message", (message) => {
         const msg = JSON.parse(message.toString("utf-8"));
         // handle message
+        console.log(room);
         room.handleMessage(msg);
         // send message to client.
         room.boardcastException(msg, ws);
@@ -98,6 +110,7 @@ wsServer.on("connection", (ws, request) => {
     });
     ws.on("close", () => {
         room.handleDeleteConnection(ws);
+        room.temporary_object = [];
         console.log("Client has disconnected.");
     });
 });

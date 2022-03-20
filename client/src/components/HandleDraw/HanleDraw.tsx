@@ -11,7 +11,11 @@ const handleDraw = (
   canvas: any,
   socket: WebSocket,
   setObjectCopy: React.Dispatch<any>,
-  objectCopy: any
+  objectCopy: any,
+  listObject: Array<any>,
+  setListObject: React.Dispatch<any>,
+  tempObjectsInCanvas: Array<any>,
+  setTempObjectsInCanvas: React.Dispatch<any>
 ) => {
   const objectInCanvas = canvas.getObjects();
   switch (message.event) {
@@ -210,6 +214,11 @@ const handleDraw = (
         return message["message"]["option"].id.indexOf(object.id) !== -1;
       });
       canvas.discardActiveObject();
+      let objectDeleted = {
+        event: "deleteObject",
+        object: [...objectDelete],
+      };
+      setTempObjectsInCanvas([...tempObjectsInCanvas, objectDeleted]);
       canvas.remove(...objectDelete);
       break;
     case "changeAttribute":
@@ -229,8 +238,12 @@ const handleDraw = (
             strokeWidth: parseInt(message["message"]["option"].strokeWidth),
           });
         }
-        object.setCoords();
       });
+      // let objectChanged = {
+      //   event: "changeAttribute",
+      //   object: [...objectChange],
+      // };
+      // setTempObjectsInCanvas([...tempObjectsInCanvas, objectChanged]);
       break;
     case "objectScalling":
       const selectedObjects = objectInCanvas.filter(
@@ -279,10 +292,68 @@ const handleDraw = (
         setObjectCopy(null);
       }
       break;
+    case "unDo":
+      if (tempObjectsInCanvas.length > 0) {
+        const objectUndo = tempObjectsInCanvas.pop();
+        switch (objectUndo.event) {
+          case "addObject":
+            setListObject([...listObject, objectUndo]);
+            canvas.remove(...objectUndo.object);
+            break;
+          case "deleteObject":
+            setListObject([...listObject, objectUndo]);
+            canvas.add(...objectUndo.object);
+            break;
+          case "changeAttribute":
+            setListObject([...listObject, objectUndo]);
+            const objectOrigin = tempObjectsInCanvas.filter((objectTemp : any) => {
+              return objectUndo.object.find((oUndo : any) => {
+                return objectTemp.object.find((o : any) => {
+                  return o.id === oUndo.id
+                })
+              })
+            })
+            canvas.remove(...objectUndo.object);
+            canvas.add(...objectOrigin[0].object)
+            break;
+        }
+      }
+      break;
+    case "reDo":
+      if (listObject.length > 0) {
+        const objectRedo = listObject.pop();
+        switch (objectRedo.event) {
+          case "addObject":
+            setTempObjectsInCanvas([...tempObjectsInCanvas, objectRedo]);
+            canvas.add(...objectRedo.object);
+            break;
+          case "deleteObject":
+            setTempObjectsInCanvas([...tempObjectsInCanvas, objectRedo]);
+            canvas.remove(...objectRedo.object);
+            break;
+        }
+      }
+      break;
+    case "addObjectIntoDb":
+      const objectAdded = objectInCanvas.filter((object: any) => {
+        return object.id === message["message"].id;
+      });
+      if (!tempObjectsInCanvas.find((o: any) => o.id === objectAdded[0].id)) {
+        let object = {
+          event: "addObject",
+          object: [...objectAdded],
+        };
+        console.log('zzzzz')
+        setTempObjectsInCanvas([...tempObjectsInCanvas, object]);
+      }
+      break;
     case "clearCanvas":
       canvas.clear();
       break;
   }
+  console.log("canvas",objectInCanvas)
+  console.log("listObject",listObject)
+  console.log("tempObjectsInCanvas",tempObjectsInCanvas)
   canvas.renderAll();
 };
 

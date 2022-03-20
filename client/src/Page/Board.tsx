@@ -42,10 +42,15 @@ function Board() {
   const [idObject, setIdObject] = useState<string | null>(null);
   const { id } = useParams();
   const [connect, setConnect] = useState(false);
+  const [tempObjectsInCanvas, setTempObjectsInCanvas] = useState<Array<any>>(
+    []
+  );
+  const [listObject, setListObject] = useState<Array<any>>([]);
   useEffect(() => {
-    const onSocket = new WebSocket(
-      `wss://draw-realtime-socket.herokuapp.com/${id}`
-    );
+    // const onSocket = new WebSocket(
+    //   `wss://draw-realtime-socket.herokuapp.com/${id}`
+    // );
+    const onSocket = new WebSocket(`ws://localhost:8000/${id}`);
     setSocket(onSocket);
     onSocket.onopen = () => {
       console.log("WebSocket open");
@@ -53,16 +58,27 @@ function Board() {
     const canvasElement = new window.fabric.Canvas("board");
     setCanvas(canvasElement);
   }, []);
-
+  
   useEffect(() => {
     if (socket !== null) {
       socket.onmessage = (e) => {
         let dataFromServer = JSON.parse(e.data);
-        handleDraw(dataFromServer, canvas, socket, setObjectCopys, objectCopy);
+        console.log(dataFromServer)
+        handleDraw(
+          dataFromServer,
+          canvas,
+          socket,
+          setObjectCopys,
+          objectCopy,
+          listObject,
+          setListObject,
+          tempObjectsInCanvas,
+          setTempObjectsInCanvas
+        );
         setConnect(true);
       };
     }
-  }, [canvas, objectCopy]);
+  }, [canvas, objectCopy,listObject,tempObjectsInCanvas]);
 
   const handleDisplayColorTable = () => {
     setOption({ ...option, displayColorTabel: true });
@@ -91,18 +107,18 @@ function Board() {
   // HandleMouseDown event
   const handleMouseDown = (e: eventMouse) => {
     const object = createObject(e);
+    // Use Pan
+    if (e.e.altKey === true) {
+      setOption({ ...option, isDrangging: true });
+      canvas.set({
+        selection: false,
+      });
+      setCoordinates(canvas.getPointer(e));
+      return;
+    }
     switch (option.pen) {
       case "mouse":
         setOption({ ...option, displayColorTabel: false });
-        // Use Pan
-        if (e.e.altKey === true) {
-          setOption({ ...option, isDrangging: true });
-          canvas.set({
-            selection: false,
-          });
-          setCoordinates(canvas.getPointer(e));
-          return;
-        }
         // disable keydown
         setOption({ ...option, textEditing: true });
         break;
@@ -115,7 +131,17 @@ function Board() {
         setCoordinates(object["pointer"]);
         if (socket) {
           socket.send(JSON.stringify(message));
-          handleDraw(message, canvas, socket, setObjectCopys, objectCopy);
+          handleDraw(
+            message,
+            canvas,
+            socket,
+            setObjectCopys,
+            objectCopy,
+            listObject,
+            setListObject,
+            tempObjectsInCanvas,
+            setTempObjectsInCanvas
+          );
           setOption({ ...option, isDrawing: true });
           canvas.set({
             selection: false,
@@ -149,7 +175,17 @@ function Board() {
       },
     };
     if (socket && option.isDrawing) {
-      handleDraw(message, canvas, socket, setObjectCopys, objectCopy);
+      handleDraw(
+        message,
+        canvas,
+        socket,
+        setObjectCopys,
+        objectCopy,
+        listObject,
+        setListObject,
+        tempObjectsInCanvas,
+        setTempObjectsInCanvas
+      );
       socket.send(JSON.stringify(message));
     }
   };
@@ -161,14 +197,24 @@ function Board() {
     });
     if (objectAddDb && socket) {
       if (objectAddDb && socket) {
-        socket.send(
-          JSON.stringify({
-            event: "addObjectIntoDb",
-            message: {
-              object: objectAddDb,
-              id: objectAddDb.id,
-            },
-          })
+        let message = {
+          event: "addObjectIntoDb",
+          message: {
+            object: objectAddDb,
+            id: objectAddDb.id,
+          },
+        };
+        socket.send(JSON.stringify(message));
+        handleDraw(
+          message,
+          canvas,
+          socket,
+          setObjectCopys,
+          objectCopy,
+          listObject,
+          setListObject,
+          tempObjectsInCanvas,
+          setTempObjectsInCanvas
         );
       }
       // Set textEditing when create object text.
@@ -182,12 +228,24 @@ function Board() {
     // Set value to default
     setCoordinates(canvas.getPointer(e));
     canvas.setViewportTransform(canvas.viewportTransform);
+    if (option.pen === "pencil") {
+      setOption({
+        ...option,
+        isDrawing: false,
+        pen: "pencil",
+        isDrangging: false,
+        textEditing: false,
+        displayColorTabel: false,
+      });
+      return;
+    }
     setOption({
       ...option,
       isDrawing: false,
       pen: "mouse",
       isDrangging: false,
       textEditing: false,
+      displayColorTabel: false,
     });
     canvas.set({ selection: true });
   };
@@ -246,7 +304,17 @@ function Board() {
         },
       };
       if (socket) {
-        handleDraw(message, canvas, socket, setObjectCopys, objectCopy);
+        handleDraw(
+          message,
+          canvas,
+          socket,
+          setObjectCopys,
+          objectCopy,
+          listObject,
+          setListObject,
+          tempObjectsInCanvas,
+          setTempObjectsInCanvas
+        );
         socket.send(JSON.stringify(message));
       }
     });
@@ -255,7 +323,17 @@ function Board() {
   const handleClear = () => {
     let message = { event: "clearCanvas" };
     if (socket) {
-      handleDraw(message, canvas, socket, setObjectCopys, objectCopy);
+      handleDraw(
+        message,
+        canvas,
+        socket,
+        setObjectCopys,
+        objectCopy,
+        listObject,
+        setListObject,
+        tempObjectsInCanvas,
+        setTempObjectsInCanvas
+      );
       socket.send(JSON.stringify(message));
     }
   };
@@ -305,6 +383,12 @@ function Board() {
           case 67: // C
             eventType = "copyObjects";
             break;
+          case 90: // Z
+            eventType = "unDo";
+            break;
+          case 88: //x
+            eventType = "reDo";
+            break;
         }
       }
     }
@@ -317,7 +401,17 @@ function Board() {
       },
     };
     if (socket) {
-      handleDraw(message, canvas, socket, setObjectCopys, objectCopy);
+      handleDraw(
+        message,
+        canvas,
+        socket,
+        setObjectCopys,
+        objectCopy,
+        listObject,
+        setListObject,
+        tempObjectsInCanvas,
+        setTempObjectsInCanvas
+      );
       socket.send(JSON.stringify(message));
     }
   };
@@ -376,6 +470,19 @@ function Board() {
       socket.send(JSON.stringify(message));
     }
   };
+  // const handleUndo = () => {
+  //   const objectsInCanvas = canvas.getObjects();
+  //   if (objectsInCanvas.length > 0) {
+  //     const objectRemoved = objectsInCanvas.pop();
+  //     listObject.push(objectRemoved);
+  //     canvas.remove(objectRemoved);
+  //   }
+  // };
+  // const handleRedo = () => {
+  //   if (listObject.length > 0) {
+  //     canvas.add(listObject.pop());
+  //   }
+  // };
   useEffect(() => {
     if (canvas !== null) {
       window.addEventListener("resize", handleReSize);
@@ -416,8 +523,8 @@ function Board() {
         onClick={hanleCoppyLink}
         className="hover:bg-blue-300 absolute h-24 w-36 border-2 rounded-tr-full rounded-bl-full top-12"
       >
-        <div className="text-ellipsis overflow-hidden w-16 relative top-8 left-10 whitespace-nowrap">
-          Room {id}
+        <div className=" overflow-hidden text-center relative top-8  whitespace-nowrap">
+          {id}
         </div>
       </div>
       <div className="fixed right-0 top-0">

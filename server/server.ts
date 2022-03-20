@@ -18,6 +18,7 @@ interface Room {
   room_id: string;
   connections: Array<WebSocket>;
   object_draw: Array<any>;
+  temporary_object: Array<any>;
 }
 
 interface message {
@@ -30,6 +31,7 @@ class Room {
     this.room_id = room_id;
     this.connections = [];
     this.object_draw = [];
+    this.temporary_object = [];
   }
 
   addConnection(connection: WebSocket) {
@@ -64,6 +66,7 @@ class Room {
         this.object_draw = this.object_draw.filter((object) => {
           return message["message"]["option"].id.indexOf(object.id) === -1;
         });
+
         break;
       case "changeAttribute":
         const objectChangeAttribute = this.object_draw.find(
@@ -76,6 +79,16 @@ class Room {
           (o) => o.id === message["message"]["option"].id
         );
         update_dic(objectChangingText, message["message"]["option"]);
+        break;
+      case "unDo":
+        if (this.object_draw.length > 0) {
+          this.temporary_object.push(this.object_draw.pop());
+        }
+        break;
+      case "reDo":
+        if (this.temporary_object.length > 0) {
+          this.object_draw.push(this.temporary_object.pop());
+        }
         break;
     }
   }
@@ -105,11 +118,11 @@ wsServer.on("connection", (ws: WebSocket, request) => {
     room = new Room(request.url);
     list_room.push(room);
   }
-  console.log(ws.readyState)
+  console.log(ws.readyState);
   // If room existed add another connection
   room.addConnection(ws);
   // send message to client when first connect
-  if (ws.readyState === WebSocket.OPEN){
+  if (ws.readyState === WebSocket.OPEN) {
     ws.send(
       JSON.stringify({
         event: "connect",
@@ -117,10 +130,10 @@ wsServer.on("connection", (ws: WebSocket, request) => {
       })
     );
   }
-
   ws.on("message", (message: Buffer) => {
     const msg = JSON.parse(message.toString("utf-8"));
     // handle message
+    console.log(room);
     room.handleMessage(msg);
     // send message to client.
     room.boardcastException(msg, ws);
@@ -128,6 +141,7 @@ wsServer.on("connection", (ws: WebSocket, request) => {
   });
   ws.on("close", () => {
     room.handleDeleteConnection(ws);
+    room.temporary_object = [];
     console.log("Client has disconnected.");
   });
 });
