@@ -13,11 +13,12 @@ function update_dic(a, b) {
     return a;
 }
 class Room {
-    constructor(room_id) {
-        this.room_id = room_id;
+    constructor(roomId) {
+        this.roomId = roomId;
         this.connections = [];
-        this.object_draw = [];
-        this.temporary_object = [];
+        this.objectDraws = [];
+        this.temporaryObjects = [];
+        this.temporaryAction = [];
     }
     addConnection(connection) {
         if (!this.connections.includes(connection)) {
@@ -25,45 +26,104 @@ class Room {
         }
     }
     addObject(object) {
-        return this.object_draw.push(object);
+        return this.objectDraws.push(object);
     }
     handleMessage(message) {
         switch (message["event"]) {
             case "addObjectIntoDb":
                 let temporary = message["message"]["object"];
                 temporary["id"] = message["message"]["id"];
-                if (!this.object_draw.find((o) => o.id === temporary.id)) {
-                    this.object_draw.push(temporary);
+                if (!this.objectDraws.find((o) => o.id === temporary.id)) {
+                    this.objectDraws.push(temporary);
+                    this.temporaryAction.push({
+                        event: "addObject",
+                        object: [temporary],
+                    });
                 }
                 break;
             case "objectScalling":
-                const objectUpdate = this.object_draw.find((o) => o.id === message["message"]["option"].id);
+                const objectUpdate = this.objectDraws.find((o) => o.id === message["message"]["option"].id);
                 update_dic(objectUpdate, message["message"]["option"]);
                 break;
             case "clearCanvas":
-                this.object_draw.length = 0;
+                this.objectDraws.length = 0;
                 break;
             case "deleteObjects":
-                this.object_draw = this.object_draw.filter((object) => {
+                const objectDeleted = this.objectDraws.filter((object) => {
+                    return message["message"]["option"].id.indexOf(object.id) !== -1;
+                });
+                this.objectDraws = this.objectDraws.filter((object) => {
                     return message["message"]["option"].id.indexOf(object.id) === -1;
+                });
+                this.temporaryAction.push({
+                    event: "deleteObject",
+                    object: [...objectDeleted],
                 });
                 break;
             case "changeAttribute":
-                const objectChangeAttribute = this.object_draw.find((o) => o.id === message["message"]["option"].id);
-                update_dic(objectChangeAttribute, message["message"]["option"]);
+                const objectChangeAttribute = this.objectDraws.filter((object) => {
+                    return message["message"]["option"].id.indexOf(object.id) !== -1;
+                });
+                objectChangeAttribute.forEach((o) => {
+                    update_dic(o, message["message"]["option"]);
+                });
+                this.temporaryAction.push({
+                    event: "changeAttributeObject",
+                    object: [...objectChangeAttribute],
+                });
                 break;
             case "textChange":
-                const objectChangingText = this.object_draw.find((o) => o.id === message["message"]["option"].id);
+                const objectChangingText = this.objectDraws.find((o) => o.id === message["message"]["option"].id);
                 update_dic(objectChangingText, message["message"]["option"]);
                 break;
             case "unDo":
-                if (this.object_draw.length > 0) {
-                    this.temporary_object.push(this.object_draw.pop());
+                if (this.temporaryAction.length > 0) {
+                    const objectUndo = this.temporaryAction.pop();
+                    this.temporaryObjects.push(objectUndo);
+                    switch (objectUndo["event"]) {
+                        case "addObject":
+                            this.objectDraws = this.objectDraws.filter((object) => {
+                                objectUndo["object"].forEach((o) => {
+                                    return o.id !== object.id;
+                                });
+                            });
+                            break;
+                        case "deleteObject":
+                            this.objectDraws.push(...objectUndo["object"]);
+                            break;
+                    }
+                    this.connections.forEach((client) => {
+                        client.send(JSON.stringify({
+                            event: "actionUndo",
+                            message: objectUndo,
+                        }));
+                    });
                 }
                 break;
             case "reDo":
-                if (this.temporary_object.length > 0) {
-                    this.object_draw.push(this.temporary_object.pop());
+                if (this.temporaryObjects.length > 0) {
+                    const objectRedo = this.temporaryObjects.pop();
+                    this.temporaryAction.push(objectRedo);
+                    switch (objectRedo["event"]) {
+                        case "addObject":
+                            this.objectDraws.push(...objectRedo["object"]);
+                            break;
+                        case "deleteObject":
+                            this.objectDraws = this.objectDraws.filter((object) => {
+                                objectRedo["object"].forEach((o) => {
+                                    return o.id !== object.id;
+                                });
+                            });
+                            break;
+                        case "changeAttributeObject":
+                            break;
+                    }
+                    this.connections.forEach((client) => {
+                        client.send(JSON.stringify({
+                            event: "actionRedo",
+                            message: objectRedo,
+                        }));
+                    });
                 }
                 break;
         }
@@ -84,7 +144,7 @@ class Room {
 }
 wsServer.on("connection", (ws, request) => {
     // check room existed and create room and add connection
-    let room = list_room.find((r) => r.room_id === request.url);
+    let room = list_room.find((r) => r.roomId === request.url);
     if (!room) {
         room = new Room(request.url);
         list_room.push(room);
@@ -96,7 +156,7 @@ wsServer.on("connection", (ws, request) => {
     if (ws.readyState === ws_1.WebSocket.OPEN) {
         ws.send(JSON.stringify({
             event: "connect",
-            message: room.object_draw,
+            message: room.objectDraws,
         }));
     }
     ws.on("message", (message) => {
@@ -110,7 +170,8 @@ wsServer.on("connection", (ws, request) => {
     });
     ws.on("close", () => {
         room.handleDeleteConnection(ws);
-        room.temporary_object = [];
+        room.temporaryObjects = [];
+        room.temporaryAction = [];
         console.log("Client has disconnected.");
     });
 });

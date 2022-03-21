@@ -58,27 +58,17 @@ function Board() {
     const canvasElement = new window.fabric.Canvas("board");
     setCanvas(canvasElement);
   }, []);
-  
+
   useEffect(() => {
     if (socket !== null) {
       socket.onmessage = (e) => {
         let dataFromServer = JSON.parse(e.data);
-        console.log(dataFromServer)
-        handleDraw(
-          dataFromServer,
-          canvas,
-          socket,
-          setObjectCopys,
-          objectCopy,
-          listObject,
-          setListObject,
-          tempObjectsInCanvas,
-          setTempObjectsInCanvas
-        );
+        console.log(dataFromServer);
+        handleDraw(dataFromServer, canvas, socket, setObjectCopys, objectCopy);
         setConnect(true);
       };
     }
-  }, [canvas, objectCopy,listObject,tempObjectsInCanvas]);
+  }, [canvas, objectCopy, listObject, tempObjectsInCanvas]);
 
   const handleDisplayColorTable = () => {
     setOption({ ...option, displayColorTabel: true });
@@ -131,17 +121,7 @@ function Board() {
         setCoordinates(object["pointer"]);
         if (socket) {
           socket.send(JSON.stringify(message));
-          handleDraw(
-            message,
-            canvas,
-            socket,
-            setObjectCopys,
-            objectCopy,
-            listObject,
-            setListObject,
-            tempObjectsInCanvas,
-            setTempObjectsInCanvas
-          );
+          handleDraw(message, canvas, socket, setObjectCopys, objectCopy);
           setOption({ ...option, isDrawing: true });
           canvas.set({
             selection: false,
@@ -175,17 +155,7 @@ function Board() {
       },
     };
     if (socket && option.isDrawing) {
-      handleDraw(
-        message,
-        canvas,
-        socket,
-        setObjectCopys,
-        objectCopy,
-        listObject,
-        setListObject,
-        tempObjectsInCanvas,
-        setTempObjectsInCanvas
-      );
+      handleDraw(message, canvas, socket, setObjectCopys, objectCopy);
       socket.send(JSON.stringify(message));
     }
   };
@@ -205,17 +175,7 @@ function Board() {
           },
         };
         socket.send(JSON.stringify(message));
-        handleDraw(
-          message,
-          canvas,
-          socket,
-          setObjectCopys,
-          objectCopy,
-          listObject,
-          setListObject,
-          tempObjectsInCanvas,
-          setTempObjectsInCanvas
-        );
+        handleDraw(message, canvas, socket, setObjectCopys, objectCopy);
       }
       // Set textEditing when create object text.
       if (objectAddDb.type === "text") {
@@ -279,8 +239,13 @@ function Board() {
   // Change color and strokeWidth
   const handleChangeAttribute = (e: eventInput) => {
     const objectChanged = canvas.getActiveObjects();
-    let strokeWidth: string;
-    let stroke: string;
+    const id = !objectChanged
+      ? null
+      : objectChanged.map((object: any) => {
+          return object.id;
+        });
+    let strokeWidth;
+    let stroke;
     switch (e.name) {
       case "strokeWidth":
         setOption({ ...option, strokeWidth: parseInt(e.value) });
@@ -290,50 +255,56 @@ function Board() {
         setOption({ ...option, color: e.value });
         stroke = e.value;
     }
-    objectChanged.forEach((object: any) => {
-      let message = {
-        event: "changeAttribute",
-        message: {
-          option: {
-            id: object.id,
-            strokeWidth: !parseInt(strokeWidth)
-              ? option.strokeWidth
-              : parseInt(strokeWidth),
-            stroke: !stroke ? option.color : stroke,
-          },
+    let message = {
+      event: "changeAttribute",
+      message: {
+        option: {
+          id: id,
+          strokeWidth: !parseInt(strokeWidth as string)
+            ? option.strokeWidth
+            : parseInt(strokeWidth as string),
+          stroke: !stroke ? option.color : stroke,
         },
-      };
-      if (socket) {
-        handleDraw(
-          message,
-          canvas,
-          socket,
-          setObjectCopys,
-          objectCopy,
-          listObject,
-          setListObject,
-          tempObjectsInCanvas,
-          setTempObjectsInCanvas
-        );
-        socket.send(JSON.stringify(message));
-      }
-    });
+      },
+    };
+    if (socket) {
+      handleDraw(message, canvas, socket, setObjectCopys, objectCopy);
+      socket.send(JSON.stringify(message));
+    }
+    // objectChanged.forEach((object: any) => {
+    //   let message = {
+    //     event: "changeAttribute",
+    //     message: {
+    //       option: {
+    //         id: object.id,
+    //         strokeWidth: !parseInt(strokeWidth)
+    //           ? option.strokeWidth
+    //           : parseInt(strokeWidth),
+    //         stroke: !stroke ? option.color : stroke,
+    //       },
+    //     },
+    //   };
+    //   if (socket) {
+    //     handleDraw(
+    //       message,
+    //       canvas,
+    //       socket,
+    //       setObjectCopys,
+    //       objectCopy,
+    //       listObject,
+    //       setListObject,
+    //       tempObjectsInCanvas,
+    //       setTempObjectsInCanvas
+    //     );
+    //     socket.send(JSON.stringify(message));
+    //   }
+    // });
   };
 
   const handleClear = () => {
     let message = { event: "clearCanvas" };
     if (socket) {
-      handleDraw(
-        message,
-        canvas,
-        socket,
-        setObjectCopys,
-        objectCopy,
-        listObject,
-        setListObject,
-        tempObjectsInCanvas,
-        setTempObjectsInCanvas
-      );
+      handleDraw(message, canvas, socket, setObjectCopys, objectCopy);
       socket.send(JSON.stringify(message));
     }
   };
@@ -401,17 +372,7 @@ function Board() {
       },
     };
     if (socket) {
-      handleDraw(
-        message,
-        canvas,
-        socket,
-        setObjectCopys,
-        objectCopy,
-        listObject,
-        setListObject,
-        tempObjectsInCanvas,
-        setTempObjectsInCanvas
-      );
+      handleDraw(message, canvas, socket, setObjectCopys, objectCopy);
       socket.send(JSON.stringify(message));
     }
   };
@@ -470,19 +431,7 @@ function Board() {
       socket.send(JSON.stringify(message));
     }
   };
-  // const handleUndo = () => {
-  //   const objectsInCanvas = canvas.getObjects();
-  //   if (objectsInCanvas.length > 0) {
-  //     const objectRemoved = objectsInCanvas.pop();
-  //     listObject.push(objectRemoved);
-  //     canvas.remove(objectRemoved);
-  //   }
-  // };
-  // const handleRedo = () => {
-  //   if (listObject.length > 0) {
-  //     canvas.add(listObject.pop());
-  //   }
-  // };
+
   useEffect(() => {
     if (canvas !== null) {
       window.addEventListener("resize", handleReSize);

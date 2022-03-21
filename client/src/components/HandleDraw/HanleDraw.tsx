@@ -6,56 +6,56 @@ import {
 } from "../../components/HandleDraw/GetAbsCordinate";
 declare var window: any;
 
+const initialObject = (listObject: Array<any>, canvas: any) => {
+  let objectInit: any;
+  listObject.forEach((o: any) => {
+    switch (o.type) {
+      case "line":
+        objectInit = new window.fabric.Line([o.x1, o.y1, o.x2, o.y2], {
+          ...o,
+          perPixelTargetFind: true,
+        });
+        break;
+      case "cycle":
+        objectInit = new window.fabric.Ellipse({
+          ...o,
+          perPixelTargetFind: true,
+        });
+        break;
+      case "rectag":
+        objectInit = new window.fabric.Rect({
+          ...o,
+          perPixelTargetFind: true,
+        });
+        break;
+      case "pencil":
+        objectInit = new window.fabric.Polyline(o.points, {
+          ...o,
+          perPixelTargetFind: true,
+        });
+        break;
+      case "text":
+        objectInit = new window.fabric.IText(o.text, {
+          ...o,
+          perPixelTargetFind: true,
+        });
+        break;
+    }
+    canvas.add(objectInit);
+  });
+};
+
 const handleDraw = (
   message: messageHandleDraw,
   canvas: any,
   socket: WebSocket,
   setObjectCopy: React.Dispatch<any>,
-  objectCopy: any,
-  listObject: Array<any>,
-  setListObject: React.Dispatch<any>,
-  tempObjectsInCanvas: Array<any>,
-  setTempObjectsInCanvas: React.Dispatch<any>
+  objectCopy: any
 ) => {
   const objectInCanvas = canvas.getObjects();
   switch (message.event) {
     case "connect":
-      let objectInit: any;
-      message["message"].forEach((o: any) => {
-        switch (o.type) {
-          case "line":
-            objectInit = new window.fabric.Line([o.x1, o.y1, o.x2, o.y2], {
-              ...o,
-              perPixelTargetFind: true,
-            });
-            break;
-          case "cycle":
-            objectInit = new window.fabric.Ellipse({
-              ...o,
-              perPixelTargetFind: true,
-            });
-            break;
-          case "rectag":
-            objectInit = new window.fabric.Rect({
-              ...o,
-              perPixelTargetFind: true,
-            });
-            break;
-          case "pencil":
-            objectInit = new window.fabric.Polyline(o.points, {
-              ...o,
-              perPixelTargetFind: true,
-            });
-            break;
-          case "text":
-            objectInit = new window.fabric.IText(o.text, {
-              ...o,
-              perPixelTargetFind: true,
-            });
-            break;
-        }
-        canvas.add(objectInit);
-      });
+      initialObject(message["message"], canvas);
       break;
     case "createObject":
       let objectDrawing;
@@ -214,11 +214,6 @@ const handleDraw = (
         return message["message"]["option"].id.indexOf(object.id) !== -1;
       });
       canvas.discardActiveObject();
-      let objectDeleted = {
-        event: "deleteObject",
-        object: [...objectDelete],
-      };
-      setTempObjectsInCanvas([...tempObjectsInCanvas, objectDeleted]);
       canvas.remove(...objectDelete);
       break;
     case "changeAttribute":
@@ -239,11 +234,6 @@ const handleDraw = (
           });
         }
       });
-      // let objectChanged = {
-      //   event: "changeAttribute",
-      //   object: [...objectChange],
-      // };
-      // setTempObjectsInCanvas([...tempObjectsInCanvas, objectChanged]);
       break;
     case "objectScalling":
       const selectedObjects = objectInCanvas.filter(
@@ -292,68 +282,44 @@ const handleDraw = (
         setObjectCopy(null);
       }
       break;
-    case "unDo":
-      if (tempObjectsInCanvas.length > 0) {
-        const objectUndo = tempObjectsInCanvas.pop();
-        switch (objectUndo.event) {
-          case "addObject":
-            setListObject([...listObject, objectUndo]);
-            canvas.remove(...objectUndo.object);
-            break;
-          case "deleteObject":
-            setListObject([...listObject, objectUndo]);
-            canvas.add(...objectUndo.object);
-            break;
-          case "changeAttribute":
-            setListObject([...listObject, objectUndo]);
-            const objectOrigin = tempObjectsInCanvas.filter((objectTemp : any) => {
-              return objectUndo.object.find((oUndo : any) => {
-                return objectTemp.object.find((o : any) => {
-                  return o.id === oUndo.id
-                })
-              })
-            })
-            canvas.remove(...objectUndo.object);
-            canvas.add(...objectOrigin[0].object)
-            break;
-        }
+    case "actionUndo":
+      switch (message["message"]["event"]) {
+        case "addObject":
+          const objectAdded = objectInCanvas.filter((object: any) => {
+            return message["message"]["object"].find((o: any) => {
+              return o.id === object.id;
+            });
+          });
+          canvas.remove(...objectAdded);
+          break;
+        case "deleteObject":
+          initialObject(message["message"]["object"], canvas);
+          break;
+        case "changeAttributeObject":
+          console.log(message)
+          break;
       }
       break;
-    case "reDo":
-      if (listObject.length > 0) {
-        const objectRedo = listObject.pop();
-        switch (objectRedo.event) {
-          case "addObject":
-            setTempObjectsInCanvas([...tempObjectsInCanvas, objectRedo]);
-            canvas.add(...objectRedo.object);
-            break;
-          case "deleteObject":
-            setTempObjectsInCanvas([...tempObjectsInCanvas, objectRedo]);
-            canvas.remove(...objectRedo.object);
-            break;
-        }
-      }
-      break;
-    case "addObjectIntoDb":
-      const objectAdded = objectInCanvas.filter((object: any) => {
-        return object.id === message["message"].id;
-      });
-      if (!tempObjectsInCanvas.find((o: any) => o.id === objectAdded[0].id)) {
-        let object = {
-          event: "addObject",
-          object: [...objectAdded],
-        };
-        console.log('zzzzz')
-        setTempObjectsInCanvas([...tempObjectsInCanvas, object]);
+    case "actionRedo":
+      switch (message["message"]["event"]) {
+        case "addObject":
+          initialObject(message["message"]["object"], canvas);
+          break;
+        case "deleteObject":
+          const objectDeleted = objectInCanvas.filter((object: any) => {
+            return message["message"]["object"].find((o: any) => {
+              return o.id === object.id;
+            });
+          });
+          canvas.remove(...objectDeleted);
+          break;
       }
       break;
     case "clearCanvas":
       canvas.clear();
       break;
   }
-  console.log("canvas",objectInCanvas)
-  console.log("listObject",listObject)
-  console.log("tempObjectsInCanvas",tempObjectsInCanvas)
+
   canvas.renderAll();
 };
 
