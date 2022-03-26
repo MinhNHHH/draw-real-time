@@ -20,7 +20,7 @@ Web Draw Real Time uses *sessions*, which connect users together.
 All users in a session work on the same canvas.
 
 Each session has a unique *session ID*, which can be set to anything.
-A random 4-character session ID is generated if one is not provided.
+A random character session ID is generated if one is not provided.
 A session's ID can be changed at any time so long as the new ID isn't already taken.
 
 Sessions can also optionally have a password set on them, so that only users who are able to provide the password can join.
