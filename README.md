@@ -23,8 +23,6 @@
 Web Draw Real Time uses *sessions*, which connect users together.
 All users in a session work on the same canvas.
 
-A session's ID can be changed at any time so long as the new ID isn't already taken.
-
 ## Currently available tools
 - Select `Keypress 1`
 - Pen Tool `Keypress 2`
