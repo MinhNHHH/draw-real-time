@@ -13,18 +13,17 @@
 - Install the [Nodejs](https://nodejs.org/en/download/)
 - Clone the project: `https://github.com/hoangminh981/draw-real-time`
 - Cd to client: `./client`
-- Build package : `npm install`.
+- Build package: `npm install`.
+- Run frontend local: `npm start`
+- Cd to server: `./server`
+- Build package: `npm install`.
+- Run backend local: `npm start`
 # Start project
 ## How does it work?
 Web Draw Real Time uses *sessions*, which connect users together.
 All users in a session work on the same canvas.
 
-Each session has a unique *session ID*, which can be set to anything.
-A random character session ID is generated if one is not provided.
 A session's ID can be changed at any time so long as the new ID isn't already taken.
-
-Sessions can also optionally have a password set on them, so that only users who are able to provide the password can join.
-A session's password can be changed or removed at any time.
 
 ## Currently available tools
 - Select `Keypress 1`
