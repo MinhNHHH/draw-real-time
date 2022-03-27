@@ -8,7 +8,7 @@
 # Objective
 - A little real-time online collaborative drawing program. <https://drawrt.vercel.app>
 - Web Draw Real Time is a web app that allows users to draw on a shared canvas in real time.
-# Install
+# Setup project
 ## Run project local.
 - Install the [Nodejs](https://nodejs.org/en/download/)
 - Clone the project: `https://github.com/hoangminh981/draw-real-time`
