@@ -12,16 +12,24 @@
 ## Run project local.
 - Install the [Nodejs](https://nodejs.org/en/download/)
 - Clone the project: `https://github.com/hoangminh981/draw-real-time`
-- Cd to client: `./client`
-- Build package: `npm install`.
-- Run frontend local: `npm start`
-- Cd to server: `./server`
-- Build package: `npm install`.
-- Run backend local: `npm start`
+- Cd to client: 
+```
+cd ./client
+npm install
+npm start
+```
+- Cd to server: 
+```
+cd ./server
+npm install
+npm start
+```
 # Start project
 ## How does it work?
 Web Draw Real Time uses *sessions*, which connect users together.
 All users in a session work on the same canvas.
+Web Draw Real Time uses WebSockets for the "Web" part, and the web Canvas API for the "Draw" part.
+The WebSockets server uses the ws module for Node.js.When a user performs an action, the server is told about it and tells all other session members about it.
 
 ## Currently available tools
 - Select `Keypress 1`
@@ -34,9 +42,7 @@ All users in a session work on the same canvas.
 - Zoom Tool `Scroll`
 - Colour Picker Tool
 
-## How does it *really* work?
-Web Draw Real Time uses WebSockets for the "Web" part, and the web Canvas API for the "Draw" part.
-
-The WebSockets server uses the [ws module] for Node.js.When a user performs an action, the server is told about it, and if necessary, then tells all other session members about it.
-
+# Upcoming features
+- [ ] Undo/Redo
+- [ ] EraseBrush
 [ws module]: https://github.com/websockets/ws
