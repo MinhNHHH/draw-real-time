@@ -45,6 +45,3 @@ The WebSockets server uses the ws module for Node.js.When a user performs an act
 # Upcoming features
 - [ ] Undo/Redo
 - [ ] EraseBrush
-
-
-[ws module]: https://github.com/websockets/ws
