@@ -21,26 +21,26 @@ export default function ToolBoard(props: ParamTypeToolBoard) {
       icon: <Mouse />,
     },
     {
-      type: "pencil",
+      type: "polyline",
       icon: <Pencil />,
     },
     {
-      type: "rectag",
+      type: "rect",
       icon: <Rectangle />,
     },
     {
-      type: "text",
+      type: "itext",
       icon: <Text />
     },
   ]);
 
   const subOption = [
     {
-      type: "rectag",
+      type: "rect",
       icon: <Rectangle />,
     },
     {
-      type: "cycle",
+      type: "ellipse",
       icon: <Cycle />,
     },
     {
@@ -52,7 +52,7 @@ export default function ToolBoard(props: ParamTypeToolBoard) {
 
   const updateListOption = (templist: listObject, subOption: listObject) => {
     const indexTempListOption = templist.findIndex(
-      (x) => x.type === "rectag" || x.type === "cycle" || x.type === "line"
+      (x) => x.type === "rect" || x.type === "ellipse" || x.type === "line"
     );
     const indexSubListOption = subOption.findIndex(
       (x) => x.type === props.type
@@ -102,9 +102,9 @@ export default function ToolBoard(props: ParamTypeToolBoard) {
 
   const handleChangePen = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (
-      e.target.value === "rectag" ||
+      e.target.value === "rect" ||
       e.target.value === "line" ||
-      e.target.value === "cycle"
+      e.target.value === "ellipse"
     ) {
       setDisplaySubObjects(true);
     }
@@ -115,8 +115,8 @@ export default function ToolBoard(props: ParamTypeToolBoard) {
     <>
       <div className="absolute bottom-14 ">
         {displaySubObjects &&
-        (props.type === "rectag" ||
-          props.type === "cycle" ||
+        (props.type === "rect" ||
+          props.type === "ellipse" ||
           props.type === "line") ? (
           <div
             className="flex p-1 rounded-xl border border-black"

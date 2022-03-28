@@ -56,12 +56,10 @@ function Board() {
     const canvasElement = new window.fabric.Canvas("board");
     setCanvas(canvasElement);
   }, []);
-  console.log(undoStack);
   useEffect(() => {
     if (socket !== null) {
       socket.onmessage = (e) => {
         let dataFromServer = JSON.parse(e.data);
-        console.log(dataFromServer);
         handleDraw(
           dataFromServer,
           canvas,
@@ -216,7 +214,7 @@ function Board() {
         );
       }
       // Set textEditing when create object text.
-      if (objectAddDb.type === "text") {
+      if (objectAddDb.type === "itext") {
         canvas.setActiveObject(objectAddDb);
         objectAddDb.enterEditing();
       }
@@ -227,11 +225,11 @@ function Board() {
     // Set value to default
     setCoordinates(canvas.getPointer(e));
     canvas.setViewportTransform(canvas.viewportTransform);
-    if (option.pen === "pencil") {
+    if (option.pen === "polyline") {
       setOption({
         ...option,
         isDrawing: false,
-        pen: "pencil",
+        pen: "polyline",
         isDrangging: false,
         textEditing: false,
         displayColorTabel: false,
@@ -298,12 +296,12 @@ function Board() {
       event: "changeAttribute",
       message: {
         option: {
-          id: id,
           strokeWidth: !parseInt(strokeWidth as string)
             ? option.strokeWidth
             : parseInt(strokeWidth as string),
           stroke: !stroke ? option.color : stroke,
         },
+        id: id,
       },
     };
     if (socket) {
@@ -362,19 +360,19 @@ function Board() {
           setOption({ ...option, pen: "mouse" });
           break;
         case 50: // 2
-          setOption({ ...option, pen: "pencil" });
+          setOption({ ...option, pen: "polyline" });
           break;
         case 51: // 3
-          setOption({ ...option, pen: "rectag" });
+          setOption({ ...option, pen: "rect" });
           break;
         case 52: // 4
-          setOption({ ...option, pen: "cycle" });
+          setOption({ ...option, pen: "ellipse" });
           break;
         case 53: // 5
           setOption({ ...option, pen: "line" });
           break;
         case 54: // 6
-          setOption({ ...option, pen: "text" });
+          setOption({ ...option, pen: "itext" });
           break;
       }
       if ((e.ctrlKey || e.metaKey) && id !== null) {
@@ -470,6 +468,17 @@ function Board() {
     };
     if (socket) {
       socket.send(JSON.stringify(message));
+      handleDraw(
+        message,
+        canvas,
+        socket,
+        setObjectCopys,
+        objectCopy,
+        undoStack,
+        setUndoStack,
+        redoStack,
+        setRedoStack
+      );
     }
   };
 
