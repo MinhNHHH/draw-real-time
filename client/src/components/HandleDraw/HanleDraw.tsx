@@ -50,7 +50,11 @@ const handleDraw = (
   canvas: any,
   socket: WebSocket,
   setObjectCopy: React.Dispatch<any>,
-  objectCopy: any
+  objectCopy: any,
+  undoStack: any,
+  setUndoStack: React.Dispatch<any>,
+  redoStack: any,
+  setRedoStack: React.Dispatch<any>
 ) => {
   const objectInCanvas = canvas.getObjects();
   switch (message.event) {
@@ -111,7 +115,9 @@ const handleDraw = (
       textChanging.set({
         text: message["message"]["option"].text,
       });
+      setUndoStack([...undoStack, canvas.toJSON()]);
       break;
+
     case "setCoordinateObject":
       const objectDraw = objectInCanvas.find((object: any) => {
         return object.id === message["message"]["option"].id;
@@ -215,6 +221,7 @@ const handleDraw = (
       });
       canvas.discardActiveObject();
       canvas.remove(...objectDelete);
+      setUndoStack([...undoStack, canvas.toJSON()]);
       break;
     case "changeAttribute":
       const objectChange = objectInCanvas.filter((object: any) => {
@@ -234,6 +241,7 @@ const handleDraw = (
           });
         }
       });
+      setUndoStack([...undoStack, canvas.toJSON()]);
       break;
     case "objectScalling":
       const selectedObjects = objectInCanvas.filter(
@@ -251,6 +259,7 @@ const handleDraw = (
         });
         object.setCoords();
       });
+      setUndoStack([...undoStack, canvas.toJSON()]);
       break;
     case "copyObjects":
       const selectedObjectsCopy = objectInCanvas.filter((object: any) =>
@@ -282,44 +291,30 @@ const handleDraw = (
         setObjectCopy(null);
       }
       break;
-    case "actionUndo":
-      switch (message["message"]["event"]) {
-        case "addObject":
-          const objectAdded = objectInCanvas.filter((object: any) => {
-            return message["message"]["object"].find((o: any) => {
-              return o.id === object.id;
-            });
-          });
-          canvas.remove(...objectAdded);
-          break;
-        case "deleteObject":
-          initialObject(message["message"]["object"], canvas);
-          break;
-        case "changeAttributeObject":
-          console.log(message)
-          break;
+    case "unDo":
+      if (undoStack.length > 0) {
+         // Get last state
+        setRedoStack([...redoStack,undoStack.pop()])
+        canvas.loadFromJSON(undoStack[undoStack.length - 1])
       }
       break;
-    case "actionRedo":
-      switch (message["message"]["event"]) {
-        case "addObject":
-          initialObject(message["message"]["object"], canvas);
-          break;
-        case "deleteObject":
-          const objectDeleted = objectInCanvas.filter((object: any) => {
-            return message["message"]["object"].find((o: any) => {
-              return o.id === object.id;
-            });
-          });
-          canvas.remove(...objectDeleted);
-          break;
-      }
+    case "reDo":
+      if (redoStack.length > 0) {
+        // Get last state
+       const latestState = redoStack.pop()
+       setUndoStack([...undoStack,latestState])
+       canvas.loadFromJSON(latestState);
+     }
+      break;
+    case "addObjectIntoDb":
+      setUndoStack([...undoStack, canvas.toJSON()]);
       break;
     case "clearCanvas":
       canvas.clear();
       break;
   }
-
+  console.log("unDO",undoStack)
+  console.log("rerrDO",redoStack)
   canvas.renderAll();
 };
 

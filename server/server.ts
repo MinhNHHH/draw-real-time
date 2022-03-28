@@ -32,8 +32,6 @@ class Room {
     this.roomId = roomId;
     this.connections = [];
     this.objectDraws = [];
-    this.temporaryObjects = [];
-    this.temporaryAction = [];
   }
 
   addConnection(connection: WebSocket) {
@@ -99,62 +97,62 @@ class Room {
         );
         update_dic(objectChangingText, message["message"]["option"]);
         break;
-      case "unDo":
-        if (this.temporaryAction.length > 0) {
-          const objectUndo = this.temporaryAction.pop();
-          this.temporaryObjects.push(objectUndo);
-          switch (objectUndo["event"]) {
-            case "addObject":
-              this.objectDraws = this.objectDraws.filter((object) => {
-                objectUndo["object"].forEach((o: any) => {
-                  return o.id !== object.id;
-                });
-              });
-              break;
-            case "deleteObject":
-              this.objectDraws.push(...objectUndo["object"]);
-              break;
-            case "changeAttributeObject":
-              break;
-          }
-          this.connections.forEach((client) => {
-            client.send(
-              JSON.stringify({
-                event: "actionUndo",
-                message: objectUndo,
-              })
-            );
-          });
-        }
-        break;
-      case "reDo":
-        if (this.temporaryObjects.length > 0) {
-          const objectRedo = this.temporaryObjects.pop();
-          this.temporaryAction.push(objectRedo);
-          switch (objectRedo["event"]) {
-            case "addObject":
-              this.objectDraws.push(...objectRedo["object"]);
-              break;
-            case "deleteObject":
-              this.objectDraws = this.objectDraws.filter((object) => {
-                objectRedo["object"].forEach((o: any) => {
-                  return o.id !== object.id;
-                });
-              });
-              break;
-            case "changeAttributeObject":
-              break;
-          }
-          this.connections.forEach((client) => {
-            client.send(
-              JSON.stringify({
-                event: "actionRedo",
-                message: objectRedo,
-              })
-            );
-          });
-        }
-        break;
+      // case "unDo":
+      //   if (this.temporaryAction.length > 0) {
+      //     const objectUndo = this.temporaryAction.pop();
+      //     this.temporaryObjects.push(objectUndo);
+      //     switch (objectUndo["event"]) {
+      //       case "addObject":
+      //         this.objectDraws = this.objectDraws.filter((object) => {
+      //           objectUndo["object"].forEach((o: any) => {
+      //             return o.id !== object.id;
+      //           });
+      //         });
+      //         break;
+      //       case "deleteObject":
+      //         this.objectDraws.push(...objectUndo["object"]);
+      //         break;
+      //       case "changeAttributeObject":
+      //         break;
+      //     }
+      //     this.connections.forEach((client) => {
+      //       client.send(
+      //         JSON.stringify({
+      //           event: "actionUndo",
+      //           message: objectUndo,
+      //         })
+      //       );
+      //     });
+      //   }
+      //   break;
+      // case "reDo":
+      //   if (this.temporaryObjects.length > 0) {
+      //     const objectRedo = this.temporaryObjects.pop();
+      //     this.temporaryAction.push(objectRedo);
+      //     switch (objectRedo["event"]) {
+      //       case "addObject":
+      //         this.objectDraws.push(...objectRedo["object"]);
+      //         break;
+      //       case "deleteObject":
+      //         this.objectDraws = this.objectDraws.filter((object) => {
+      //           objectRedo["object"].forEach((o: any) => {
+      //             return o.id !== object.id;
+      //           });
+      //         });
+      //         break;
+      //       case "changeAttributeObject":
+      //         break;
+      //     }
+      //     this.connections.forEach((client) => {
+      //       client.send(
+      //         JSON.stringify({
+      //           event: "actionRedo",
+      //           message: objectRedo,
+      //         })
+      //       );
+      //     });
+      //   }
+      //   break;
     }
   }
 
