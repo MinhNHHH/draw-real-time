@@ -13,10 +13,10 @@ function update_dic(a, b) {
     return a;
 }
 class Room {
-    constructor(room_id) {
-        this.room_id = room_id;
+    constructor(roomId) {
+        this.roomId = roomId;
         this.connections = [];
-        this.object_draw = [];
+        this.objectDraws = [];
     }
     addConnection(connection) {
         if (!this.connections.includes(connection)) {
@@ -24,36 +24,60 @@ class Room {
         }
     }
     addObject(object) {
-        return this.object_draw.push(object);
+        return this.objectDraws.push(object);
     }
     handleMessage(message) {
         switch (message["event"]) {
             case "addObjectIntoDb":
                 let temporary = message["message"]["object"];
                 temporary["id"] = message["message"]["id"];
-                if (!this.object_draw.find((o) => o.id === temporary.id)) {
-                    this.object_draw.push(temporary);
+                if (!this.objectDraws.find((o) => o.id === temporary.id)) {
+                    this.objectDraws.push(temporary);
                 }
                 break;
             case "objectScalling":
-                const objectUpdate = this.object_draw.find((o) => o.id === message["message"]["option"].id);
+                const objectUpdate = this.objectDraws.find((o) => o.id === message["message"]["option"].id);
                 update_dic(objectUpdate, message["message"]["option"]);
                 break;
             case "clearCanvas":
-                this.object_draw.length = 0;
+                this.objectDraws.length = 0;
                 break;
             case "deleteObjects":
-                this.object_draw = this.object_draw.filter((object) => {
+                this.objectDraws = this.objectDraws.filter((object) => {
                     return message["message"]["option"].id.indexOf(object.id) === -1;
                 });
                 break;
             case "changeAttribute":
-                const objectChangeAttribute = this.object_draw.find((o) => o.id === message["message"]["option"].id);
-                update_dic(objectChangeAttribute, message["message"]["option"]);
+                const objectChangeAttribute = this.objectDraws.filter((object) => {
+                    return message["message"].id.indexOf(object.id) !== -1;
+                });
+                objectChangeAttribute.forEach((o) => {
+                    update_dic(o, message["message"]["option"]);
+                });
                 break;
             case "textChange":
-                const objectChangingText = this.object_draw.find((o) => o.id === message["message"]["option"].id);
+                const objectChangingText = this.objectDraws.find((o) => o.id === message["message"]["option"].id);
                 update_dic(objectChangingText, message["message"]["option"]);
+                break;
+            case "undoAction":
+                if (message["message"]["canvas"]) {
+                    this.objectDraws.forEach((object) => {
+                        const objectUpdated = message["message"]["canvas"]["objects"].find((o) => object.id === o.id);
+                        if (!objectUpdated) {
+                            this.objectDraws.push(objectUpdated);
+                        }
+                        update_dic(object, objectUpdated);
+                    });
+                }
+                break;
+            case "redoAction":
+                this.objectDraws.forEach((object) => {
+                    const objectUpdated = message["message"]["canvas"]["objects"].find((o) => object.id === o.id);
+                    if (!objectUpdated) {
+                        this.objectDraws.push(objectUpdated);
+                    }
+                    update_dic(object, objectUpdated);
+                });
                 break;
         }
     }
@@ -73,7 +97,7 @@ class Room {
 }
 wsServer.on("connection", (ws, request) => {
     // check room existed and create room and add connection
-    let room = list_room.find((r) => r.room_id === request.url);
+    let room = list_room.find((r) => r.roomId === request.url);
     if (!room) {
         room = new Room(request.url);
         list_room.push(room);
@@ -85,7 +109,7 @@ wsServer.on("connection", (ws, request) => {
     if (ws.readyState === ws_1.WebSocket.OPEN) {
         ws.send(JSON.stringify({
             event: "connect",
-            message: room.object_draw,
+            message: room.objectDraws,
         }));
     }
     ws.on("message", (message) => {

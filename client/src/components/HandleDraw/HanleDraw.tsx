@@ -6,52 +6,60 @@ import {
 } from "../../components/HandleDraw/GetAbsCordinate";
 declare var window: any;
 
+const initialObject = (listObject: Array<any>, canvas: any) => {
+  let objectInit: any;
+  listObject.forEach((o: any) => {
+    switch (o.type) {
+      case "line":
+        objectInit = new window.fabric.Line([o.x1, o.y1, o.x2, o.y2], {
+          ...o,
+          perPixelTargetFind: true,
+        });
+        break;
+      case "ellipse":
+        objectInit = new window.fabric.Ellipse({
+          ...o,
+          perPixelTargetFind: true,
+        });
+        break;
+      case "rect":
+        objectInit = new window.fabric.Rect({
+          ...o,
+          perPixelTargetFind: true,
+        });
+        break;
+      case "polyline":
+        objectInit = new window.fabric.Polyline(o.points, {
+          ...o,
+          perPixelTargetFind: true,
+        });
+        break;
+      case "itext":
+        objectInit = new window.fabric.IText(o.text, {
+          ...o,
+          perPixelTargetFind: true,
+        });
+        break;
+    }
+    canvas.add(objectInit);
+  });
+};
+
 const handleDraw = (
   message: messageHandleDraw,
   canvas: any,
   socket: WebSocket,
   setObjectCopy: React.Dispatch<any>,
-  objectCopy: any
+  objectCopy: any,
+  undoStack: any,
+  setUndoStack: React.Dispatch<any>,
+  redoStack: any,
+  setRedoStack: React.Dispatch<any>
 ) => {
   const objectInCanvas = canvas.getObjects();
   switch (message.event) {
     case "connect":
-      let objectInit: any;
-      message["message"].forEach((o: any) => {
-        switch (o.type) {
-          case "line":
-            objectInit = new window.fabric.Line([o.x1, o.y1, o.x2, o.y2], {
-              ...o,
-              perPixelTargetFind: true,
-            });
-            break;
-          case "cycle":
-            objectInit = new window.fabric.Ellipse({
-              ...o,
-              perPixelTargetFind: true,
-            });
-            break;
-          case "rectag":
-            objectInit = new window.fabric.Rect({
-              ...o,
-              perPixelTargetFind: true,
-            });
-            break;
-          case "pencil":
-            objectInit = new window.fabric.Polyline(o.points, {
-              ...o,
-              perPixelTargetFind: true,
-            });
-            break;
-          case "text":
-            objectInit = new window.fabric.IText(o.text, {
-              ...o,
-              perPixelTargetFind: true,
-            });
-            break;
-        }
-        canvas.add(objectInit);
-      });
+      initialObject(message["message"], canvas);
       break;
     case "createObject":
       let objectDrawing;
@@ -67,15 +75,15 @@ const handleDraw = (
             message["message"]["option"]
           );
           break;
-        case "rectag":
+        case "rect":
           objectDrawing = new window.fabric.Rect(message["message"]["option"]);
           break;
-        case "cycle":
+        case "ellipse":
           objectDrawing = new window.fabric.Ellipse(
             message["message"]["option"]
           );
           break;
-        case "pencil":
+        case "polyline":
           objectDrawing = new window.fabric.Polyline(
             [
               {
@@ -86,7 +94,7 @@ const handleDraw = (
             { ...message["message"]["option"], fill: "transparent" }
           );
           break;
-        case "text":
+        case "itext":
           objectDrawing = new window.fabric.IText("", {
             ...message["message"]["option"],
             fontWeight: "normal",
@@ -107,7 +115,9 @@ const handleDraw = (
       textChanging.set({
         text: message["message"]["option"].text,
       });
+      setUndoStack([...undoStack, canvas.toJSON(["id"])]);
       break;
+
     case "setCoordinateObject":
       const objectDraw = objectInCanvas.find((object: any) => {
         return object.id === message["message"]["option"].id;
@@ -120,7 +130,7 @@ const handleDraw = (
               y2: message["message"]["pointerNew"].y,
             });
             break;
-          case "rectag":
+          case "rect":
             if (
               message["message"]["pointerOrigin"].x >
               message["message"]["pointerNew"].x
@@ -150,7 +160,7 @@ const handleDraw = (
               ),
             });
             break;
-          case "cycle":
+          case "ellipse":
             if (
               message["message"]["pointerOrigin"].x >
               message["message"]["pointerNew"].x
@@ -182,7 +192,7 @@ const handleDraw = (
                 ) / 2,
             });
             break;
-          case "pencil":
+          case "polyline":
             const dim = objectDraw._calcDimensions();
             objectDraw.points.push(
               new window.fabric.Point(
@@ -211,13 +221,14 @@ const handleDraw = (
       });
       canvas.discardActiveObject();
       canvas.remove(...objectDelete);
+      setUndoStack([...undoStack, canvas.toJSON(["id"])]);
       break;
     case "changeAttribute":
       const objectChange = objectInCanvas.filter((object: any) => {
-        return message["message"]["option"].id.indexOf(object.id) !== -1;
+        return message["message"].id.indexOf(object.id) !== -1;
       });
       objectChange.forEach((object: any) => {
-        if (object.type === "text") {
+        if (object.type === "itext") {
           object.set({
             stroke: message["message"]["option"].stroke,
             fontSize: parseInt(message["message"]["option"].strokeWidth) * 10,
@@ -229,8 +240,8 @@ const handleDraw = (
             strokeWidth: parseInt(message["message"]["option"].strokeWidth),
           });
         }
-        object.setCoords();
       });
+      setUndoStack([...undoStack, canvas.toObject(["id"])]);
       break;
     case "objectScalling":
       const selectedObjects = objectInCanvas.filter(
@@ -279,8 +290,43 @@ const handleDraw = (
         setObjectCopy(null);
       }
       break;
+    case "unDo":
+      if (undoStack.length > 0) {
+        // Get last state
+        setRedoStack([...redoStack, undoStack.pop()]);
+        canvas.loadFromJSON(undoStack[undoStack.length - 1]);
+        socket.send(
+          JSON.stringify({
+            event: "undoAction",
+            message: {
+              canvas: undoStack[undoStack.length - 1],
+            },
+          })
+        );
+      }
+      break;
+    case "reDo":
+      if (redoStack.length > 0) {
+        // Get last state
+        const latestState = redoStack.pop();
+        setUndoStack([...undoStack, latestState]);
+        canvas.loadFromJSON(latestState);
+        socket.send(
+          JSON.stringify({
+            event: "redoAction",
+            message: {
+              canvas: latestState,
+            },
+          })
+        );
+      }
+      break;
+    case "addObjectIntoDb":
+      setUndoStack([...undoStack, canvas.toJSON(["id"])]);
+      break;
     case "clearCanvas":
       canvas.clear();
+      setUndoStack([...undoStack, canvas.toJSON(["id"])]);
       break;
   }
   canvas.renderAll();

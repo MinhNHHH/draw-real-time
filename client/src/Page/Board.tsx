@@ -42,10 +42,13 @@ function Board() {
   const [idObject, setIdObject] = useState<string | null>(null);
   const { id } = useParams();
   const [connect, setConnect] = useState(false);
+  const [redoStack, setRedoStack] = useState<Array<any>>([]);
+  const [undoStack, setUndoStack] = useState<Array<any>>([]);
   useEffect(() => {
-    const onSocket = new WebSocket(
-      `wss://draw-realtime-socket.herokuapp.com/${id}`
-    );
+    // const onSocket = new WebSocket(
+    //   `wss://draw-realtime-socket.herokuapp.com/${id}`
+    // );
+    const onSocket = new WebSocket(`ws://localhost:8000/${id}`);
     setSocket(onSocket);
     onSocket.onopen = () => {
       console.log("WebSocket open");
@@ -53,16 +56,25 @@ function Board() {
     const canvasElement = new window.fabric.Canvas("board");
     setCanvas(canvasElement);
   }, []);
-
   useEffect(() => {
     if (socket !== null) {
       socket.onmessage = (e) => {
         let dataFromServer = JSON.parse(e.data);
-        handleDraw(dataFromServer, canvas, socket, setObjectCopys, objectCopy);
+        handleDraw(
+          dataFromServer,
+          canvas,
+          socket,
+          setObjectCopys,
+          objectCopy,
+          undoStack,
+          setUndoStack,
+          redoStack,
+          setRedoStack
+        );
         setConnect(true);
       };
     }
-  }, [canvas, objectCopy]);
+  }, [canvas, objectCopy, undoStack, redoStack]);
 
   const handleDisplayColorTable = () => {
     setOption({ ...option, displayColorTabel: true });
@@ -91,18 +103,18 @@ function Board() {
   // HandleMouseDown event
   const handleMouseDown = (e: eventMouse) => {
     const object = createObject(e);
+    // Use Pan
+    if (e.e.altKey === true) {
+      setOption({ ...option, isDrangging: true });
+      canvas.set({
+        selection: false,
+      });
+      setCoordinates(canvas.getPointer(e));
+      return;
+    }
     switch (option.pen) {
       case "mouse":
         setOption({ ...option, displayColorTabel: false });
-        // Use Pan
-        if (e.e.altKey === true) {
-          setOption({ ...option, isDrangging: true });
-          canvas.set({
-            selection: false,
-          });
-          setCoordinates(canvas.getPointer(e));
-          return;
-        }
         // disable keydown
         setOption({ ...option, textEditing: true });
         break;
@@ -115,7 +127,17 @@ function Board() {
         setCoordinates(object["pointer"]);
         if (socket) {
           socket.send(JSON.stringify(message));
-          handleDraw(message, canvas, socket, setObjectCopys, objectCopy);
+          handleDraw(
+            message,
+            canvas,
+            socket,
+            setObjectCopys,
+            objectCopy,
+            undoStack,
+            setUndoStack,
+            redoStack,
+            setRedoStack
+          );
           setOption({ ...option, isDrawing: true });
           canvas.set({
             selection: false,
@@ -149,7 +171,17 @@ function Board() {
       },
     };
     if (socket && option.isDrawing) {
-      handleDraw(message, canvas, socket, setObjectCopys, objectCopy);
+      handleDraw(
+        message,
+        canvas,
+        socket,
+        setObjectCopys,
+        objectCopy,
+        undoStack,
+        setUndoStack,
+        redoStack,
+        setRedoStack
+      );
       socket.send(JSON.stringify(message));
     }
   };
@@ -161,33 +193,56 @@ function Board() {
     });
     if (objectAddDb && socket) {
       if (objectAddDb && socket) {
-        socket.send(
-          JSON.stringify({
-            event: "addObjectIntoDb",
-            message: {
-              object: objectAddDb,
-              id: objectAddDb.id,
-            },
-          })
+        let message = {
+          event: "addObjectIntoDb",
+          message: {
+            object: objectAddDb,
+            id: objectAddDb.id,
+          },
+        };
+        socket.send(JSON.stringify(message));
+        handleDraw(
+          message,
+          canvas,
+          socket,
+          setObjectCopys,
+          objectCopy,
+          undoStack,
+          setUndoStack,
+          redoStack,
+          setRedoStack
         );
       }
       // Set textEditing when create object text.
-      if (objectAddDb.type === "text") {
+      if (objectAddDb.type === "itext") {
         canvas.setActiveObject(objectAddDb);
         objectAddDb.enterEditing();
       }
       setIdObject(null);
       setCoordinates(null);
     }
+
     // Set value to default
     setCoordinates(canvas.getPointer(e));
     canvas.setViewportTransform(canvas.viewportTransform);
+    if (option.pen === "polyline") {
+      setOption({
+        ...option,
+        isDrawing: false,
+        pen: "polyline",
+        isDrangging: false,
+        textEditing: false,
+        displayColorTabel: false,
+      });
+      return;
+    }
     setOption({
       ...option,
       isDrawing: false,
       pen: "mouse",
       isDrangging: false,
       textEditing: false,
+      displayColorTabel: false,
     });
     canvas.set({ selection: true });
   };
@@ -221,8 +276,13 @@ function Board() {
   // Change color and strokeWidth
   const handleChangeAttribute = (e: eventInput) => {
     const objectChanged = canvas.getActiveObjects();
-    let strokeWidth: string;
-    let stroke: string;
+    const id = !objectChanged
+      ? null
+      : objectChanged.map((object: any) => {
+          return object.id;
+        });
+    let strokeWidth;
+    let stroke;
     switch (e.name) {
       case "strokeWidth":
         setOption({ ...option, strokeWidth: parseInt(e.value) });
@@ -232,30 +292,48 @@ function Board() {
         setOption({ ...option, color: e.value });
         stroke = e.value;
     }
-    objectChanged.forEach((object: any) => {
-      let message = {
-        event: "changeAttribute",
-        message: {
-          option: {
-            id: object.id,
-            strokeWidth: !parseInt(strokeWidth)
-              ? option.strokeWidth
-              : parseInt(strokeWidth),
-            stroke: !stroke ? option.color : stroke,
-          },
+    let message = {
+      event: "changeAttribute",
+      message: {
+        option: {
+          strokeWidth: !parseInt(strokeWidth as string)
+            ? option.strokeWidth
+            : parseInt(strokeWidth as string),
+          stroke: !stroke ? option.color : stroke,
         },
-      };
-      if (socket) {
-        handleDraw(message, canvas, socket, setObjectCopys, objectCopy);
-        socket.send(JSON.stringify(message));
-      }
-    });
+        id: id,
+      },
+    };
+    if (socket) {
+      handleDraw(
+        message,
+        canvas,
+        socket,
+        setObjectCopys,
+        objectCopy,
+        undoStack,
+        setUndoStack,
+        redoStack,
+        setRedoStack
+      );
+      socket.send(JSON.stringify(message));
+    }
   };
 
   const handleClear = () => {
     let message = { event: "clearCanvas" };
     if (socket) {
-      handleDraw(message, canvas, socket, setObjectCopys, objectCopy);
+      handleDraw(
+        message,
+        canvas,
+        socket,
+        setObjectCopys,
+        objectCopy,
+        undoStack,
+        setUndoStack,
+        redoStack,
+        setRedoStack
+      );
       socket.send(JSON.stringify(message));
     }
   };
@@ -282,19 +360,19 @@ function Board() {
           setOption({ ...option, pen: "mouse" });
           break;
         case 50: // 2
-          setOption({ ...option, pen: "pencil" });
+          setOption({ ...option, pen: "polyline" });
           break;
         case 51: // 3
-          setOption({ ...option, pen: "rectag" });
+          setOption({ ...option, pen: "rect" });
           break;
         case 52: // 4
-          setOption({ ...option, pen: "cycle" });
+          setOption({ ...option, pen: "ellipse" });
           break;
         case 53: // 5
           setOption({ ...option, pen: "line" });
           break;
         case 54: // 6
-          setOption({ ...option, pen: "text" });
+          setOption({ ...option, pen: "itext" });
           break;
       }
       if ((e.ctrlKey || e.metaKey) && id !== null) {
@@ -304,6 +382,12 @@ function Board() {
             break;
           case 67: // C
             eventType = "copyObjects";
+            break;
+          case 90: // Z
+            eventType = "unDo";
+            break;
+          case 88: //x
+            eventType = "reDo";
             break;
         }
       }
@@ -317,7 +401,17 @@ function Board() {
       },
     };
     if (socket) {
-      handleDraw(message, canvas, socket, setObjectCopys, objectCopy);
+      handleDraw(
+        message,
+        canvas,
+        socket,
+        setObjectCopys,
+        objectCopy,
+        undoStack,
+        setUndoStack,
+        redoStack,
+        setRedoStack
+      );
       socket.send(JSON.stringify(message));
     }
   };
@@ -374,8 +468,20 @@ function Board() {
     };
     if (socket) {
       socket.send(JSON.stringify(message));
+      handleDraw(
+        message,
+        canvas,
+        socket,
+        setObjectCopys,
+        objectCopy,
+        undoStack,
+        setUndoStack,
+        redoStack,
+        setRedoStack
+      );
     }
   };
+
   useEffect(() => {
     if (canvas !== null) {
       window.addEventListener("resize", handleReSize);
@@ -416,8 +522,8 @@ function Board() {
         onClick={hanleCoppyLink}
         className="hover:bg-blue-300 absolute h-24 w-36 border-2 rounded-tr-full rounded-bl-full top-12"
       >
-        <div className="text-ellipsis overflow-hidden w-16 relative top-8 left-10 whitespace-nowrap">
-          Room {id}
+        <div className=" overflow-hidden text-center relative top-8  whitespace-nowrap">
+          {id}
         </div>
       </div>
       <div className="fixed right-0 top-0">
