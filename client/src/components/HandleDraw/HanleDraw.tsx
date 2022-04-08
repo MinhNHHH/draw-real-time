@@ -50,11 +50,7 @@ const handleDraw = (
   canvas: any,
   socket: WebSocket,
   setObjectCopy: React.Dispatch<any>,
-  objectCopy: any,
-  undoStack: any,
-  setUndoStack: React.Dispatch<any>,
-  redoStack: any,
-  setRedoStack: React.Dispatch<any>
+  objectCopy: any
 ) => {
   const objectInCanvas = canvas.getObjects();
   switch (message.event) {
@@ -115,7 +111,6 @@ const handleDraw = (
       textChanging.set({
         text: message["message"]["option"].text,
       });
-      setUndoStack([...undoStack, canvas.toJSON(["id"])]);
       break;
 
     case "setCoordinateObject":
@@ -221,7 +216,6 @@ const handleDraw = (
       });
       canvas.discardActiveObject();
       canvas.remove(...objectDelete);
-      setUndoStack([...undoStack, canvas.toJSON(["id"])]);
       break;
     case "changeAttribute":
       const objectChange = objectInCanvas.filter((object: any) => {
@@ -241,7 +235,6 @@ const handleDraw = (
           });
         }
       });
-      setUndoStack([...undoStack, canvas.toObject(["id"])]);
       break;
     case "objectScalling":
       const selectedObjects = objectInCanvas.filter(
@@ -290,43 +283,8 @@ const handleDraw = (
         setObjectCopy(null);
       }
       break;
-    case "unDo":
-      if (undoStack.length > 0) {
-        // Get last state
-        setRedoStack([...redoStack, undoStack.pop()]);
-        canvas.loadFromJSON(undoStack[undoStack.length - 1]);
-        socket.send(
-          JSON.stringify({
-            event: "undoAction",
-            message: {
-              canvas: undoStack[undoStack.length - 1],
-            },
-          })
-        );
-      }
-      break;
-    case "reDo":
-      if (redoStack.length > 0) {
-        // Get last state
-        const latestState = redoStack.pop();
-        setUndoStack([...undoStack, latestState]);
-        canvas.loadFromJSON(latestState);
-        socket.send(
-          JSON.stringify({
-            event: "redoAction",
-            message: {
-              canvas: latestState,
-            },
-          })
-        );
-      }
-      break;
-    case "addObjectIntoDb":
-      setUndoStack([...undoStack, canvas.toJSON(["id"])]);
-      break;
     case "clearCanvas":
       canvas.clear();
-      setUndoStack([...undoStack, canvas.toJSON(["id"])]);
       break;
   }
   canvas.renderAll();

@@ -80,30 +80,6 @@ class Room {
         );
         update_dic(objectChangingText, message["message"]["option"]);
         break;
-      case "undoAction":
-        if (message["message"]["canvas"]) {
-          this.objectDraws.forEach((object) => {
-            const objectUpdated = message["message"]["canvas"]["objects"].find(
-              (o: any) => object.id === o.id
-            );
-            if (!objectUpdated) {
-              this.objectDraws.push(objectUpdated);
-            }
-            update_dic(object, objectUpdated);
-          });
-        }
-        break;
-      case "redoAction":
-        this.objectDraws.forEach((object) => {
-          const objectUpdated = message["message"]["canvas"]["objects"].find(
-            (o: any) => object.id === o.id
-          );
-          if (!objectUpdated) {
-            this.objectDraws.push(objectUpdated);
-          }
-          update_dic(object, objectUpdated);
-        });
-        break;
     }
   }
   boardcastException(msg: message, connection: WebSocket) {
@@ -120,7 +96,9 @@ class Room {
   }
 
   handleDeleteConnection(connection: any) {
-    this.connections.splice(connection, 1);
+    this.connections = this.connections.filter((connection) => {
+      return connection.readyState !== 3;
+    });
   }
 }
 

@@ -14,7 +14,8 @@ module.exports = {
         "42%": "42%",
         "86%": "86%",
         "6%": "6%",
-        "144px" : "144px"
+        "144px" : "144px",
+        "394px": "394px"
       },
       animation: {
         'bounce-1.25' : "bounce 1.25s infinite",
@@ -22,5 +23,6 @@ module.exports = {
       }
     },
   },
+  important: true,
   plugins: [],
 }

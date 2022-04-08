@@ -5,8 +5,9 @@ import { v4 as uuidv4 } from "uuid";
 import StyleColor from "../components/Tool/StyleColor";
 import ToolBoard from "../components/Tool/ToolBoard";
 import Loading from "./Loading";
+import Disconnect from "./Disconnect";
 import { ReactComponent as Delete } from "../icon/delete.svg";
-
+import Tooltip from "@mui/material/Tooltip";
 import {
   getAbsLeft,
   getAbsTop,
@@ -35,6 +36,7 @@ function Board() {
     isDrangging: false,
     textEditing: false,
     displayColorTabel: false,
+    copyRoom: false,
   });
   const [canvas, setCanvas] = useState<any>(null);
   const [coordinate, setCoordinates] = useState<any>(null);
@@ -42,8 +44,7 @@ function Board() {
   const [idObject, setIdObject] = useState<string | null>(null);
   const { id } = useParams();
   const [connect, setConnect] = useState(false);
-  const [redoStack, setRedoStack] = useState<Array<any>>([]);
-  const [undoStack, setUndoStack] = useState<Array<any>>([]);
+  const [disconnect, setDisConnect] = useState(false);
   useEffect(() => {
     const onSocket = new WebSocket(
       `wss://${process.env.REACT_APP_BASE_API}/${id}`
@@ -59,21 +60,14 @@ function Board() {
     if (socket !== null) {
       socket.onmessage = (e) => {
         let dataFromServer = JSON.parse(e.data);
-        handleDraw(
-          dataFromServer,
-          canvas,
-          socket,
-          setObjectCopys,
-          objectCopy,
-          undoStack,
-          setUndoStack,
-          redoStack,
-          setRedoStack
-        );
+        handleDraw(dataFromServer, canvas, socket, setObjectCopys, objectCopy);
         setConnect(true);
       };
+      socket.onclose = (e) => {
+        setDisConnect(true);
+      };
     }
-  }, [canvas, objectCopy, undoStack, redoStack]);
+  }, [canvas, objectCopy]);
 
   const handleDisplayColorTable = () => {
     setOption({ ...option, displayColorTabel: true });
@@ -126,17 +120,7 @@ function Board() {
         setCoordinates(object["pointer"]);
         if (socket) {
           socket.send(JSON.stringify(message));
-          handleDraw(
-            message,
-            canvas,
-            socket,
-            setObjectCopys,
-            objectCopy,
-            undoStack,
-            setUndoStack,
-            redoStack,
-            setRedoStack
-          );
+          handleDraw(message, canvas, socket, setObjectCopys, objectCopy);
           setOption({ ...option, isDrawing: true });
           canvas.set({
             selection: false,
@@ -170,17 +154,7 @@ function Board() {
       },
     };
     if (socket && option.isDrawing) {
-      handleDraw(
-        message,
-        canvas,
-        socket,
-        setObjectCopys,
-        objectCopy,
-        undoStack,
-        setUndoStack,
-        redoStack,
-        setRedoStack
-      );
+      handleDraw(message, canvas, socket, setObjectCopys, objectCopy);
       socket.send(JSON.stringify(message));
     }
   };
@@ -200,17 +174,7 @@ function Board() {
           },
         };
         socket.send(JSON.stringify(message));
-        handleDraw(
-          message,
-          canvas,
-          socket,
-          setObjectCopys,
-          objectCopy,
-          undoStack,
-          setUndoStack,
-          redoStack,
-          setRedoStack
-        );
+        handleDraw(message, canvas, socket, setObjectCopys, objectCopy);
       }
       // Set textEditing when create object text.
       if (objectAddDb.type === "itext") {
@@ -242,6 +206,7 @@ function Board() {
       isDrangging: false,
       textEditing: false,
       displayColorTabel: false,
+      copyRoom: false,
     });
     canvas.set({ selection: true });
   };
@@ -304,17 +269,7 @@ function Board() {
       },
     };
     if (socket) {
-      handleDraw(
-        message,
-        canvas,
-        socket,
-        setObjectCopys,
-        objectCopy,
-        undoStack,
-        setUndoStack,
-        redoStack,
-        setRedoStack
-      );
+      handleDraw(message, canvas, socket, setObjectCopys, objectCopy);
       socket.send(JSON.stringify(message));
     }
   };
@@ -322,23 +277,14 @@ function Board() {
   const handleClear = () => {
     let message = { event: "clearCanvas" };
     if (socket) {
-      handleDraw(
-        message,
-        canvas,
-        socket,
-        setObjectCopys,
-        objectCopy,
-        undoStack,
-        setUndoStack,
-        redoStack,
-        setRedoStack
-      );
+      handleDraw(message, canvas, socket, setObjectCopys, objectCopy);
       socket.send(JSON.stringify(message));
     }
   };
 
   const hanleCoppyLink = () => {
     navigator.clipboard.writeText(window.location.href);
+    setOption({ ...option, copyRoom: true });
   };
 
   const handleKeyDown = (e: eventKeyBoard) => {
@@ -382,12 +328,6 @@ function Board() {
           case 67: // C
             eventType = "copyObjects";
             break;
-          case 90: // Z
-            eventType = "unDo";
-            break;
-          case 88: //x
-            eventType = "reDo";
-            break;
         }
       }
     }
@@ -400,17 +340,7 @@ function Board() {
       },
     };
     if (socket) {
-      handleDraw(
-        message,
-        canvas,
-        socket,
-        setObjectCopys,
-        objectCopy,
-        undoStack,
-        setUndoStack,
-        redoStack,
-        setRedoStack
-      );
+      handleDraw(message, canvas, socket, setObjectCopys, objectCopy);
       socket.send(JSON.stringify(message));
     }
   };
@@ -435,24 +365,23 @@ function Board() {
     event.e.preventDefault();
     event.e.stopPropagation();
   };
-  const handleReSize = () => {
-    // Resize canvas.
-    if (canvas.width != window.innerWidth) {
-      let scaleMultiplier = window.innerWidth / canvas.width;
-
-      const objects = canvas.getObjects();
-      objects.forEach((object: any) => {
-        object.scaleX = object.scaleX * scaleMultiplier;
-        object.scaleY = object.scaleY * scaleMultiplier;
-        object.left = object.left * scaleMultiplier;
-        object.top = object.top * scaleMultiplier;
-      });
-      canvas.setWidth(canvas.getWidth() * scaleMultiplier);
-      canvas.setHeight(canvas.getHeight() * scaleMultiplier);
-      canvas.renderAll();
-      canvas.calcOffset();
-    }
-  };
+  // const handleReSize = () => {
+  //   // Resize canvas.
+  //   if (canvas.width != window.innerWidth) {
+  //     let scaleMultiplier = window.innerWidth / canvas.width;
+  //     const objects = canvas.getObjects();
+  //     objects.forEach((object: any) => {
+  //       object.scaleX = object.scaleX * scaleMultiplier;
+  //       object.scaleY = object.scaleY * scaleMultiplier;
+  //       object.left = object.left * scaleMultiplier;
+  //       object.top = object.top * scaleMultiplier;
+  //     });
+  //     canvas.setWidth(canvas.getWidth() * scaleMultiplier);
+  //     canvas.setHeight(canvas.getHeight() * scaleMultiplier);
+  //     canvas.renderAll();
+  //     canvas.calcOffset();
+  //   }
+  // };
   const handleTextEdit = (e: any) => {
     setOption({ ...option, textEditing: true });
     const textChanging = canvas.getActiveObject();
@@ -467,23 +396,13 @@ function Board() {
     };
     if (socket) {
       socket.send(JSON.stringify(message));
-      handleDraw(
-        message,
-        canvas,
-        socket,
-        setObjectCopys,
-        objectCopy,
-        undoStack,
-        setUndoStack,
-        redoStack,
-        setRedoStack
-      );
+      handleDraw(message, canvas, socket, setObjectCopys, objectCopy);
     }
   };
 
   useEffect(() => {
     if (canvas !== null) {
-      window.addEventListener("resize", handleReSize);
+      // window.addEventListener("resize", handleReSize);
       document.addEventListener("keydown", handleKeyDown);
       canvas.on("mouse:down", handleMouseDown);
       canvas.on("mouse:move", handleMouseMove);
@@ -496,7 +415,7 @@ function Board() {
       canvas.on("text:changed", handleTextEdit);
       return () => {
         document.removeEventListener("keydown", handleKeyDown);
-        window.removeEventListener("resize", handleReSize);
+        // window.removeEventListener("resize", handleReSize);
         canvas.off("mouse:down", handleMouseDown);
         canvas.off("mouse:move", handleMouseMove);
         canvas.off("mouse:up", handleMouseUp);
@@ -513,17 +432,20 @@ function Board() {
     <>
       {connect === false && <Loading />}
       <canvas
+        className="border-2"
         id="board"
-        width={window.innerWidth}
-        height={window.innerHeight}
+        width={1000}
+        height={1000}
       ></canvas>
       <div
         onClick={hanleCoppyLink}
-        className="hover:bg-blue-300 absolute h-24 w-36 border-2 rounded-tr-full rounded-bl-full top-12"
+        className="hover:bg-blue-400 fixed w-36 h-11 m-2 border-2 rounded-lg top-0"
       >
-        <div className=" overflow-hidden text-center relative top-8  whitespace-nowrap">
-          {id}
-        </div>
+        <Tooltip title={option.copyRoom ? `Copied` : ""} placement="top">
+          <div className=" overflow-hidden text-center relative m-2 whitespace-nowrap">
+            {id}
+          </div>
+        </Tooltip>
       </div>
       <div className="fixed right-0 top-0">
         <StyleColor
@@ -542,12 +464,14 @@ function Board() {
           type={option.pen}
         />
         <button
-          className="transform hover:bg-#e5e7eb rounded-xl  relative m-0 p-3 flex align-middle justify-center border-2 border-white transition duration-300 hover:scale-125"
+          className="ml-2 transform hover:bg-#e5e7eb rounded-xl  relative m-0 p-3 flex 
+          align-middle justify-center border-2 border-white transition duration-300 hover:scale-125"
           onClick={handleClear}
         >
           <Delete />
         </button>
       </div>
+      {disconnect === true && <Disconnect id={id} />}
     </>
   );
 }

@@ -6,12 +6,11 @@ import { ReactComponent as Cycle } from "../../icon/cycle.svg";
 import { ReactComponent as Line } from "../../icon/line.svg";
 import { ReactComponent as Text } from "../../icon/text.svg";
 import ToolBoardCheckBox from "./ToolBoardCheckBox";
-
 interface ParamTypeToolBoard {
   type: string;
-  setPen: (value : string) => void;
+  setPen: (value: string) => void;
 }
-type listObject = Array<{ type: string; icon: JSX.Element }>;
+type listObject = Array<{ type: string; icon: JSX.Element; keypress: number }>;
 
 export default function ToolBoard(props: ParamTypeToolBoard) {
   const [displaySubObjects, setDisplaySubObjects] = useState(false);
@@ -19,18 +18,22 @@ export default function ToolBoard(props: ParamTypeToolBoard) {
     {
       type: "mouse",
       icon: <Mouse />,
+      keypress: 1,
     },
     {
       type: "polyline",
       icon: <Pencil />,
+      keypress: 2,
     },
     {
       type: "rect",
       icon: <Rectangle />,
+      keypress: 3,
     },
     {
       type: "itext",
-      icon: <Text />
+      icon: <Text />,
+      keypress: 6,
     },
   ]);
 
@@ -38,18 +41,20 @@ export default function ToolBoard(props: ParamTypeToolBoard) {
     {
       type: "rect",
       icon: <Rectangle />,
+      keypress: 3,
     },
     {
       type: "ellipse",
       icon: <Cycle />,
+      keypress: 4,
     },
     {
       type: "line",
       icon: <Line />,
+      keypress: 5,
     },
   ];
   let tempListOption = [...listOptions];
-
   const updateListOption = (templist: listObject, subOption: listObject) => {
     const indexTempListOption = templist.findIndex(
       (x) => x.type === "rect" || x.type === "ellipse" || x.type === "line"
@@ -60,6 +65,8 @@ export default function ToolBoard(props: ParamTypeToolBoard) {
     if (indexSubListOption !== -1) {
       templist[indexTempListOption].icon = subOption[indexSubListOption].icon;
       templist[indexTempListOption].type = subOption[indexSubListOption].type;
+      templist[indexTempListOption].keypress =
+        subOption[indexSubListOption].keypress;
     }
     return templist;
   };
@@ -71,6 +78,7 @@ export default function ToolBoard(props: ParamTypeToolBoard) {
   const displayOption = listOptions.map((item) => {
     return (
       <ToolBoardCheckBox
+        index={item.keypress}
         selected={"bg-blue-400 text-white w-full h-full rounded-lg p-2"}
         hover={
           "transform w-full h-full hover:bg-#e5e7eb rounded-xl  relative m-0 p-1 flex align-middle justify-center w-full h-full border-4 border-white transition duration-300 hover:scale-125"
@@ -87,6 +95,7 @@ export default function ToolBoard(props: ParamTypeToolBoard) {
   const displaySubObject = subOption.map((item) => {
     return (
       <ToolBoardCheckBox
+        index={item.keypress}
         selected={"bg-blue-400 text-white w-full h-full rounded-lg p-2"}
         hover={
           "transform w-full h-full hover:bg-#e5e7eb rounded-xl  relative m-0 p-1 flex align-middle justify-center w-full h-full border-4 border-white transition duration-300 hover:scale-125"

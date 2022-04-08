@@ -18,26 +18,26 @@ function Home() {
   return (
     <div className="bg-cover bg-center h-screen bg-orange-100">
       <div className="absolute place-items-center h-fit w-378px left-39% top-29% rounded-3xl">
-        <div className="text-center text-5xl font-bold top-5 text-black flex">
+        <div className="text-center text-5xl font-bold top-5 text-black flex w-394px">
           <div>
             <Pencil width={50} height={50}/>
           </div>
           <p>Draw Real Time</p>
         </div>
-        <div className=" mt-8 text-3xl p-4 text-black">
-          <label htmlFor="roomId">Room ID</label>
+        <div className=" mt-16 text-center text-2xl text-black">
+          <label htmlFor="roomId">Hey there! Want to create room</label>
         </div>
         <form className="p-4 flex" onSubmit={joinFunction}>
           <input
             type="text"
             name="roomId"
-            className=" w-full h-12 border-solid p-4 border-2"
+            className=" w-full h-12 border-solid p-4 border-2 text-2xl"
             placeholder="Please enter room id"
             onChange={onChangeIdRoom}
           />
           <button
             type="submit"
-            className="text-center w-full h-12  bg-cyan-400 text-black text-2xl"
+            className="text-center w-36 h-12  bg-cyan-400 text-black text-2xl"
             onClick={joinFunction}
           >
             Join

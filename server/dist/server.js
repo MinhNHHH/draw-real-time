@@ -59,26 +59,6 @@ class Room {
                 const objectChangingText = this.objectDraws.find((o) => o.id === message["message"]["option"].id);
                 update_dic(objectChangingText, message["message"]["option"]);
                 break;
-            case "undoAction":
-                if (message["message"]["canvas"]) {
-                    this.objectDraws.forEach((object) => {
-                        const objectUpdated = message["message"]["canvas"]["objects"].find((o) => object.id === o.id);
-                        if (!objectUpdated) {
-                            this.objectDraws.push(objectUpdated);
-                        }
-                        update_dic(object, objectUpdated);
-                    });
-                }
-                break;
-            case "redoAction":
-                this.objectDraws.forEach((object) => {
-                    const objectUpdated = message["message"]["canvas"]["objects"].find((o) => object.id === o.id);
-                    if (!objectUpdated) {
-                        this.objectDraws.push(objectUpdated);
-                    }
-                    update_dic(object, objectUpdated);
-                });
-                break;
         }
     }
     boardcastException(msg, connection) {
@@ -92,7 +72,9 @@ class Room {
         });
     }
     handleDeleteConnection(connection) {
-        this.connections.splice(connection, 1);
+        this.connections = this.connections.filter((connection) => {
+            return connection.readyState !== 3;
+        });
     }
 }
 wsServer.on("connection", (ws, request) => {
@@ -102,7 +84,6 @@ wsServer.on("connection", (ws, request) => {
         room = new Room(request.url);
         list_room.push(room);
     }
-    console.log(ws.readyState);
     // If room existed add another connection
     room.addConnection(ws);
     // send message to client when first connect
@@ -118,7 +99,6 @@ wsServer.on("connection", (ws, request) => {
         room.handleMessage(msg);
         // send message to client.
         room.boardcastException(msg, ws);
-        // console.log("room", room);
     });
     ws.on("close", () => {
         room.handleDeleteConnection(ws);

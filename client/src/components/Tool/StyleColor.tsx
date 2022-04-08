@@ -43,7 +43,7 @@ function StyleColor(props: ParamType) {
         value={e.size}
         name={"strokeWidth"}
         selected={
-          "bg-cyan-200 rounded-xl text-white relative m-0 p-1 flex align-middle justify-center w-10 h-10 border-4 border-white"
+          "bg-blue-400 rounded-xl text-white relative m-0 p-1 flex align-middle justify-center w-10 h-10 border-4 border-white"
         }
         hover={
           "transform h-10 w-10 hover:bg-#e5e7eb rounded-xl  relative m-0 p-1 flex align-middle justify-center w-10 h-10 border-4 border-white transition duration-300 hover:scale-125"
@@ -60,7 +60,7 @@ function StyleColor(props: ParamType) {
         value={e}
         name={"stroke"}
         selected={
-          "bg-cyan-200 rounded-xl relative m-0 p-1 flex align-middle justify-center w-10 h-10 border-4 border-white"
+          "bg-blue-400 rounded-xl relative m-0 p-1 flex align-middle justify-center w-10 h-10 border-4 border-white"
         }
         hover={
           "transform h-10 w-10 hover:bg-#e5e7eb rounded-xl  relative m-0 p-1 flex align-middle justify-center w-10 h-10 border-4 border-white transition duration-300 hover:scale-125"
