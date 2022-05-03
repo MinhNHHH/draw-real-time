@@ -434,8 +434,8 @@ function Board() {
       <canvas
         className="border-2"
         id="board"
-        width={1000}
-        height={1000}
+        width={window.innerWidth}
+        height={window.innerHeight}
       ></canvas>
       <div
         onClick={hanleCoppyLink}
