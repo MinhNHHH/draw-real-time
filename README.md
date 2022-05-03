@@ -2,8 +2,9 @@
   <p>Draw Real Time</p>
 </h1>
 <a href="https://drawrt.vercel.app/"><p align="center"><img style="border-radius:20px;" src="./client/public/index.png"/></p></a>
-
-![Draw](./client/public/demo.gif)
+<p align="center">
+  <img src="./client/public/demo.gif" alt="animated" />
+</p>
 
 # Draw real time
 - A little real-time online collaborative drawing program. <https://drawrt.vercel.app>
