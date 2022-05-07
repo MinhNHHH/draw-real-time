@@ -27,8 +27,8 @@ npm start
 ```
 # Start project
 - Web Draw Real Time uses *sessions*, which connect users together. All users in a session work on the same canvas.
-_ Web Draw Real Time uses Reactjs and WebSockets for the "Web" part, and the web Canvas API for the "Draw" part.
-_ The WebSockets server uses the ws module for Node.js.When a user performs an action, the server is told about it and tells all other session members about it.
+- Web Draw Real Time uses Reactjs and WebSockets for the "Web" part, and the web Canvas API for the "Draw" part.
+- The WebSockets server uses the ws module for Node.js.When a user performs an action, the server is told about it and tells all other session members about it.
 
 
 ## Currently available tools
