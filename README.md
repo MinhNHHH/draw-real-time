@@ -7,7 +7,7 @@
 </p>
 
 # Draw real time
-- A little real-time online collaborative drawing program. <https://drawrt.vercel.app>
+- A little real-time online collaborative drawing program. <https://draw-real-time.vercel.app>
 - Web Draw Real Time is a web app that allows users to draw on a shared canvas in real time.
 # Setup project
 ## Run project local.
